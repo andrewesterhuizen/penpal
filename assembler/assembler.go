@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/andrewesterhuizen/vm/instructions"
-	"github.com/andrewesterhuizen/vm/lexer"
+	"github.com/andrewesterhuizen/penpal/instructions"
+	"github.com/andrewesterhuizen/penpal/lexer"
 )
 
 type Assembler struct {

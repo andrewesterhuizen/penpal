@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/andrewesterhuizen/vm/assembler"
-	"github.com/andrewesterhuizen/vm/vm"
+	"github.com/andrewesterhuizen/penpal/assembler"
+	"github.com/andrewesterhuizen/penpal/vm"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package assembler
 import (
 	"testing"
 
-	"github.com/andrewesterhuizen/vm/instructions"
+	"github.com/andrewesterhuizen/penpal/instructions"
 )
 
 type TestCase struct {
