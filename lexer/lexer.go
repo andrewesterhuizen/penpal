@@ -51,6 +51,7 @@ func getDefineArgs(parts []string) ([]Arg, error) {
 }
 
 func (l *Lexer) parseLine(line string) error {
+	line = strings.TrimSpace(line)
 	if line == "" {
 		return nil
 	}

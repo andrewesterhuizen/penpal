@@ -50,15 +50,23 @@ var instructionTestCases = []TestCase{
 	TestCase{input: "$test = 0xabcd\nJUMPZ $test\n", output: []uint8{instructions.JUMPZ, 0xab, 0xcd}},
 	TestCase{input: "$test = 0xbc\nJUMPNZ $test\n", output: []uint8{instructions.JUMPNZ, 0x0, 0xbc}},
 	TestCase{input: "$test = 0xabcd\nJUMPNZ $test\n", output: []uint8{instructions.JUMPNZ, 0xab, 0xcd}},
-	// TestCase{input: "test:", output: []uint8{}},
-	// TestCase{input: `
-	// test:
-	// 	LOAD
+	TestCase{input: "test:", output: []uint8{}},
+	TestCase{input: `
+	test:
+		SWAP
 
-	// JUMP test
-	// `,
-	// 	output: []uint8{instructions.LOAD, instructions.JUMP, 0x0, 0x0},
-	// },
+	JUMP test
+	`,
+		output: []uint8{instructions.SWAP, instructions.JUMP, 0x0, 0x0},
+	},
+	TestCase{input: `
+	JUMP test
+
+	test:
+		SWAP
+	`,
+		output: []uint8{instructions.JUMP, 0x0, 0x3, instructions.SWAP},
+	},
 }
 
 func TestInstructions(t *testing.T) {
@@ -74,7 +82,7 @@ func TestInstructions(t *testing.T) {
 
 		for i, in := range tc.output {
 			if in != ins[i] {
-				t.Errorf("expected %02x and got %02x", ins[i], in)
+				t.Errorf("expected 0x%02x and got 0x%02x", in, ins[i])
 			}
 		}
 

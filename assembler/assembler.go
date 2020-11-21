@@ -1,17 +1,13 @@
 package assembler
 
 import (
-	"fmt"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/andrewesterhuizen/vm/instructions"
 	"github.com/andrewesterhuizen/vm/lexer"
 )
-
-// TODO: labels
 
 type Assembler struct {
 	index        int
@@ -179,20 +175,32 @@ func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) {
 	}
 }
 
-var labelRegex = regexp.MustCompile(`^(\w+):`)
+func (a *Assembler) getLabels(tokens []lexer.Token) {
+	instructionNumber := 0
 
-func (a *Assembler) getLabels(lines []string) {
-	for i, l := range lines {
+	for _, t := range tokens {
+		switch t.Type {
+		case lexer.TokenDefine:
+			// skip
+		case lexer.TokenLabel:
+			// add label
+			if t.Type == lexer.TokenLabel {
+				a.labels[t.Value] = uint16(instructionNumber)
+			}
 
-		l = strings.TrimSpace(l)
-		if label := labelRegex.FindString(l); len(label) > 0 {
-			fmt.Printf("%d: %s\n", i, label)
+		case lexer.TokenInstruction:
+			i, exists := instructions.InstructionByName[t.Value]
+			if !exists {
+				log.Fatalf("encountered unknown instruction when getting labels: %s", t.Value)
+			}
 
-			a.labels[label] = uint16(i)
+			instructionNumber += instructions.Width[i]
+
+		default:
+			log.Fatalf("encountered unexpected token type when getting labels: %s\n", t.Type)
 		}
-	}
 
-	// fmt.Println(a.labels)
+	}
 }
 
 func (a *Assembler) GetInstructions(source string) []uint8 {
@@ -204,9 +212,7 @@ func (a *Assembler) GetInstructions(source string) []uint8 {
 		log.Fatalf("assembler failed: %v\n", err)
 	}
 
-	lines := strings.Split(source, "\n")
-
-	a.getLabels(lines)
+	a.getLabels(tokens)
 
 	for _, t := range tokens {
 		a.ParseToken(t)
