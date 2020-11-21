@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"a.com/mvm/assembler"
-	"a.com/mvm/vm"
+	"github.com/andrewesterhuizen/vm/assembler"
+	"github.com/andrewesterhuizen/vm/vm"
 )
 
 func main() {

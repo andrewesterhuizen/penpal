@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"a.com/mvm/instructions"
+	"github.com/andrewesterhuizen/vm/instructions"
 )
 
 // TODO: labels

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"a.com/mvm/instructions"
+	"github.com/andrewesterhuizen/vm/instructions"
 )
 
 type VM struct {
