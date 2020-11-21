@@ -2,10 +2,11 @@ package instructions
 
 const (
 	HALT = iota
-	// memory access
+	MOVA
+	MOVB
+	SWAP
 	LOAD
 	STORE
-	// maths / logic
 	ADD
 	SUB
 	MUL
@@ -14,11 +15,9 @@ const (
 	SHR
 	AND
 	OR
-	// conditional
 	JUMP
 	JUMPZ
 	JUMPNZ
-	// stack
 	PUSH
 	POP
 	CALL
@@ -26,6 +25,9 @@ const (
 )
 
 var Names = map[uint8]string{
+	MOVA:   "MOVA",
+	MOVB:   "MOVB",
+	SWAP:   "SWAP",
 	HALT:   "HALT",
 	LOAD:   "LOAD",
 	STORE:  "STORE",

@@ -11,7 +11,6 @@ import (
 )
 
 // TODO: labels
-// TODO: macros
 
 type Assembler struct {
 	index        int
@@ -43,6 +42,8 @@ func getInstructionAndArg(line string) (string, string, bool, bool) {
 	if len(matches) == 2 {
 		if matches[1][0] == '$' {
 			return matches[0], matches[1], true, false
+		} else if matches[1][0] == '0' && matches[1][1] == 'x' {
+			return matches[0], matches[1], false, false
 		} else if wordRegex.MatchString(matches[1]) {
 			return matches[0], matches[1], false, true
 		} else {
@@ -109,18 +110,12 @@ func (a *Assembler) parseInstruction(line string) {
 	instruction, arg, argIsDefine, argIsLabel := getInstructionAndArg(line)
 
 	switch instruction {
-	case "LOAD":
-		a.instructions = append(a.instructions, instructions.LOAD)
-	case "STORE":
-		a.instructions = append(a.instructions, instructions.STORE)
-	case "POP":
-		a.instructions = append(a.instructions, instructions.POP)
-	case "PUSH":
-		a.instructions = append(a.instructions, instructions.PUSH)
+	case "MOVA":
+		a.instructions = append(a.instructions, instructions.MOVA)
 
 		if argIsDefine {
 			value := a.getDefine(arg)
-			a.instructions = append(a.instructions, uint8(parseInt(value, 8, instruction)))
+			a.instructions = append(a.instructions, uint8(parseInt(value, 16, instruction)))
 		} else if argIsLabel {
 			value := a.getLabel(arg)
 			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
@@ -129,24 +124,92 @@ func (a *Assembler) parseInstruction(line string) {
 			a.instructions = append(a.instructions, uint8(parseInt(arg, 8, instruction)))
 		}
 
+	case "MOVB":
+		a.instructions = append(a.instructions, instructions.MOVB)
+
+		if argIsDefine {
+			value := a.getDefine(arg)
+			a.instructions = append(a.instructions, uint8(parseInt(value, 16, instruction)))
+		} else if argIsLabel {
+			value := a.getLabel(arg)
+			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
+			a.instructions = append(a.instructions, uint8((value & 0xff)))
+		} else {
+			a.instructions = append(a.instructions, uint8(parseInt(arg, 8, instruction)))
+		}
+
+	case "SWAP":
+		a.instructions = append(a.instructions, instructions.SWAP)
+
+	case "LOAD":
+		a.instructions = append(a.instructions, instructions.LOAD)
+
+		if argIsDefine {
+			value := a.getDefine(arg)
+			n := parseInt(value, 16, instruction)
+			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
+			a.instructions = append(a.instructions, uint8(n&0xff))
+		} else if argIsLabel {
+			value := a.getLabel(arg)
+			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
+			a.instructions = append(a.instructions, uint8((value & 0xff)))
+		} else {
+			n := parseInt(arg, 16, instruction)
+			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
+			a.instructions = append(a.instructions, uint8(n&0xff))
+		}
+
+	case "POP":
+		a.instructions = append(a.instructions, instructions.POP)
+
+	case "PUSH":
+		a.instructions = append(a.instructions, instructions.PUSH)
+
+	case "STORE":
+		a.instructions = append(a.instructions, instructions.STORE)
+
+		if argIsDefine {
+			value := a.getDefine(arg)
+			n := parseInt(value, 16, instruction)
+			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
+			a.instructions = append(a.instructions, uint8(n&0xff))
+		} else if argIsLabel {
+			value := a.getLabel(arg)
+			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
+			a.instructions = append(a.instructions, uint8((value & 0xff)))
+		} else {
+			n := parseInt(arg, 16, instruction)
+			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
+			a.instructions = append(a.instructions, uint8(n&0xff))
+		}
+
 	case "ADD":
 		a.instructions = append(a.instructions, instructions.ADD)
+
 	case "SUB":
 		a.instructions = append(a.instructions, instructions.SUB)
+
 	case "MUL":
 		a.instructions = append(a.instructions, instructions.MUL)
+
 	case "DIV":
 		a.instructions = append(a.instructions, instructions.DIV)
+
 	case "SHL":
 		a.instructions = append(a.instructions, instructions.SHL)
+
 	case "SHR":
 		a.instructions = append(a.instructions, instructions.SHR)
+
 	case "AND":
 		a.instructions = append(a.instructions, instructions.AND)
+
 	case "OR":
 		a.instructions = append(a.instructions, instructions.OR)
+
 	case "HALT":
 		a.instructions = append(a.instructions, instructions.HALT)
+
 	case "JUMP":
 		a.instructions = append(a.instructions, instructions.JUMP)
 
@@ -165,6 +228,7 @@ func (a *Assembler) parseInstruction(line string) {
 			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
 			a.instructions = append(a.instructions, uint8(n&0xff))
 		}
+
 	case "JUMPZ":
 		a.instructions = append(a.instructions, instructions.JUMPZ)
 
@@ -183,6 +247,7 @@ func (a *Assembler) parseInstruction(line string) {
 			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
 			a.instructions = append(a.instructions, uint8(n&0xff))
 		}
+
 	case "JUMPNZ":
 		a.instructions = append(a.instructions, instructions.JUMPNZ)
 
@@ -201,8 +266,8 @@ func (a *Assembler) parseInstruction(line string) {
 			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
 			a.instructions = append(a.instructions, uint8(n&0xff))
 		}
-	case "CALL":
 
+	case "CALL":
 		a.instructions = append(a.instructions, instructions.CALL)
 
 		if argIsDefine {
@@ -243,7 +308,7 @@ func (a *Assembler) getLabels(lines []string) {
 		}
 	}
 
-	fmt.Println(a.labels)
+	// fmt.Println(a.labels)
 }
 
 func (a *Assembler) GetInstructions(source string) []uint8 {

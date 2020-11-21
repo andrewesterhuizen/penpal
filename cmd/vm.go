@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/andrewesterhuizen/vm/assembler"
 	"github.com/andrewesterhuizen/vm/vm"
 )
@@ -11,12 +9,14 @@ func main() {
 	a := assembler.New()
 
 	source := `
-	CALL 0x6
-	PUSH 0xae
-	HALT
-
-	PUSH 0x1
-	RET
+		CALL 0x6
+		MOVB 0xaa
+		HALT
+		
+		MOVA 0xff
+		RET
+	
+		HALT
 	`
 
 	i := a.GetInstructions(source)
@@ -24,6 +24,7 @@ func main() {
 	vm := vm.New()
 
 	vm.Load(i)
-	f := vm.Run()
-	fmt.Printf("finished with 0x%02x\n", f)
+	vm.Run()
+	vm.PrintReg()
+	vm.PrintMem(0xffff-10, 10)
 }

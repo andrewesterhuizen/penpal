@@ -11,17 +11,17 @@ type VM struct {
 	ip           uint16
 	sp           uint16
 	fp           uint16
-	memory       [0xf]uint8
+	a            uint8
+	b            uint8
+	memory       [0xffff]uint8
 	instructions []uint8
 }
 
 func New() VM {
 	vm := VM{}
 	vm.ip = 0
-	vm.sp = 0xf - 1
-	vm.fp = 0xf - 1
-
-	vm.memory[0] = 0xae
+	vm.sp = 0xffff - 1
+	vm.fp = 0xffff - 1
 
 	return vm
 }
@@ -67,53 +67,64 @@ func (vm *VM) fetch16() uint16 {
 func (vm *VM) execute(instruction uint8) {
 	name, exists := instructions.Names[instruction]
 	if !exists {
-		log.Fatalf("encountered unknown instruction %d", instruction)
+		log.Fatalf("encountered unknown instruction 0x%02x", instruction)
 	}
 
 	fmt.Printf("Executing %s\n", name)
 
 	switch instruction {
+	case instructions.SWAP:
+		vm.a, vm.b = vm.b, vm.a
+		vm.ip++
+
+	case instructions.MOVA:
+		vm.a = vm.fetch()
+		vm.ip++
+
+	case instructions.MOVB:
+		vm.b = vm.fetch()
+		vm.ip++
+
 	case instructions.STORE:
-		addr := vm.pop16()
-		val := vm.pop()
-		vm.memory[addr] = val
+		addr := vm.fetch16()
+		vm.memory[addr] = vm.a
 		vm.ip++
 
 	case instructions.LOAD:
-		addr := vm.pop16()
-		vm.push(vm.memory[addr])
+		addr := vm.fetch16()
+		vm.a = vm.memory[addr]
 		vm.ip++
 
 	case instructions.ADD:
-		vm.push(vm.pop() + vm.pop())
+		vm.a += vm.b
 		vm.ip++
 
 	case instructions.SUB:
-		vm.push(vm.pop() - vm.pop())
+		vm.a -= vm.b
 		vm.ip++
 
 	case instructions.MUL:
-		vm.push(vm.pop() * vm.pop())
+		vm.a *= vm.b
 		vm.ip++
 
 	case instructions.DIV:
-		vm.push(vm.pop() / vm.pop())
+		vm.a /= vm.b
 		vm.ip++
 
 	case instructions.SHL:
-		vm.push(vm.pop() << vm.pop())
+		vm.a = vm.a << vm.b
 		vm.ip++
 
 	case instructions.SHR:
-		vm.push(vm.pop() >> vm.pop())
+		vm.a = vm.a >> vm.b
 		vm.ip++
 
 	case instructions.AND:
-		vm.push(vm.pop() & vm.pop())
+		vm.a = vm.a & vm.b
 		vm.ip++
 
 	case instructions.OR:
-		vm.push(vm.pop() | vm.pop())
+		vm.a = vm.a | vm.b
 		vm.ip++
 
 	case instructions.JUMP:
@@ -122,8 +133,7 @@ func (vm *VM) execute(instruction uint8) {
 
 	case instructions.JUMPZ:
 		addr := vm.fetch16()
-		n := vm.pop()
-		if n == 0 {
+		if vm.a == 0 {
 			vm.ip = addr
 		} else {
 			vm.ip++
@@ -131,18 +141,18 @@ func (vm *VM) execute(instruction uint8) {
 
 	case instructions.JUMPNZ:
 		addr := vm.fetch16()
-		if vm.pop() != 0 {
+		if vm.a != 0 {
 			vm.ip = addr
 		} else {
 			vm.ip++
 		}
 
 	case instructions.PUSH:
-		vm.push(vm.fetch())
+		vm.push(vm.a)
 		vm.ip++
 
 	case instructions.POP:
-		vm.pop()
+		vm.a = vm.pop()
 		vm.ip++
 
 	case instructions.CALL:
@@ -157,7 +167,7 @@ func (vm *VM) execute(instruction uint8) {
 		vm.ip = addr
 
 	default:
-		log.Fatalf("encountered unknown instruction %d, name=%s", instruction, instructions.Names[instruction])
+		log.Fatalf("encountered unknown instruction 0x%02x, name=%s", instruction, instructions.Names[instruction])
 	}
 
 }
@@ -166,7 +176,17 @@ func (vm *VM) Load(instructions []uint8) {
 	vm.instructions = instructions
 }
 
-func (vm *VM) Run() uint8 {
+func (vm *VM) PrintReg() {
+	fmt.Printf("a: 0x%02x | b: 0x%02x\n", vm.a, vm.b)
+}
+
+func (vm *VM) PrintMem(start uint16, n uint16) {
+	for i := start; i < start+n; i++ {
+		fmt.Printf("%04x: 0x%02x\n", i, vm.memory[i])
+	}
+}
+
+func (vm *VM) Run() {
 	ins := vm.instructions
 
 	for {
@@ -176,6 +196,4 @@ func (vm *VM) Run() uint8 {
 
 		vm.execute(ins[vm.ip])
 	}
-
-	return vm.memory[0xf-1]
 }
