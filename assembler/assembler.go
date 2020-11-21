@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/andrewesterhuizen/vm/instructions"
+	"github.com/andrewesterhuizen/vm/lexer"
 )
 
 // TODO: labels
@@ -27,34 +28,6 @@ func New() Assembler {
 	return a
 }
 
-var instructionRegex = regexp.MustCompile(`(\$*\w+)`)
-var defineRegex = regexp.MustCompile(`\$(\w+)\s?=\s?(\w+)`)
-
-var wordRegex = regexp.MustCompile(`(\w+)`)
-
-func getInstructionAndArg(line string) (string, string, bool, bool) {
-	matches := instructionRegex.FindAllString(line, -1)
-
-	if matches == nil || len(matches) <= 0 {
-		return "", "", false, false
-	}
-
-	if len(matches) == 2 {
-		if matches[1][0] == '$' {
-			return matches[0], matches[1], true, false
-		} else if matches[1][0] == '0' && matches[1][1] == 'x' {
-			return matches[0], matches[1], false, false
-		} else if wordRegex.MatchString(matches[1]) {
-			return matches[0], matches[1], false, true
-		} else {
-			return matches[0], matches[1], false, false
-		}
-
-	}
-
-	return matches[0], "", false, false
-}
-
 func parseInt(s string, base int, instruction string) uint64 {
 	n, err := strconv.ParseUint(s, 0, base)
 	if err != nil {
@@ -64,22 +37,17 @@ func parseInt(s string, base int, instruction string) uint64 {
 	return n
 }
 
-func (a *Assembler) ParseLine(line string) {
-	line = strings.TrimSpace(line)
-	if strings.HasPrefix(line, "$") {
-		a.parseDefine(line)
+func (a *Assembler) ParseToken(t lexer.Token) {
+	switch t.Type {
+	case lexer.TokenDefine:
+		a.defines[t.Value] = t.Args[0].Value
+	case lexer.TokenLabel:
+	case lexer.TokenInstruction:
+		a.addInstruction(t)
 
-	} else if strings.Contains(line, ":") {
-		// skip
-	} else {
-		a.parseInstruction(line)
+	default:
+		log.Fatalf("encountered unexpected token type %s\n", t.Type)
 	}
-
-}
-
-func (a *Assembler) parseDefine(line string) {
-	matches := instructionRegex.FindAllString(line, -1)
-	a.defines[matches[0]] = matches[1]
 }
 
 func (a *Assembler) getDefine(d string) string {
@@ -100,64 +68,24 @@ func (a *Assembler) getLabel(d string) uint16 {
 	return v
 }
 
-func (a *Assembler) parseInstruction(line string) {
-	line = strings.TrimSpace(line)
-
-	if line == "" {
-		return
-	}
-
-	instruction, arg, argIsDefine, argIsLabel := getInstructionAndArg(line)
+func (a *Assembler) addInstruction(t lexer.Token) {
+	instruction := t.Value
 
 	switch instruction {
 	case "MOVA":
 		a.instructions = append(a.instructions, instructions.MOVA)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-			a.instructions = append(a.instructions, uint8(parseInt(value, 16, instruction)))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			a.instructions = append(a.instructions, uint8(parseInt(arg, 8, instruction)))
-		}
+		a.addInstructionArgs8(t.Args[0], instruction)
 
 	case "MOVB":
 		a.instructions = append(a.instructions, instructions.MOVB)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-			a.instructions = append(a.instructions, uint8(parseInt(value, 16, instruction)))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			a.instructions = append(a.instructions, uint8(parseInt(arg, 8, instruction)))
-		}
+		a.addInstructionArgs8(t.Args[0], instruction)
 
 	case "SWAP":
 		a.instructions = append(a.instructions, instructions.SWAP)
 
 	case "LOAD":
 		a.instructions = append(a.instructions, instructions.LOAD)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-			n := parseInt(value, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			n := parseInt(arg, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		}
+		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "POP":
 		a.instructions = append(a.instructions, instructions.POP)
@@ -167,21 +95,7 @@ func (a *Assembler) parseInstruction(line string) {
 
 	case "STORE":
 		a.instructions = append(a.instructions, instructions.STORE)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-			n := parseInt(value, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			n := parseInt(arg, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		}
+		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "ADD":
 		a.instructions = append(a.instructions, instructions.ADD)
@@ -212,79 +126,19 @@ func (a *Assembler) parseInstruction(line string) {
 
 	case "JUMP":
 		a.instructions = append(a.instructions, instructions.JUMP)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-
-			n := parseInt(value, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			n := parseInt(arg, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		}
+		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "JUMPZ":
 		a.instructions = append(a.instructions, instructions.JUMPZ)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-
-			n := parseInt(value, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			n := parseInt(arg, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		}
+		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "JUMPNZ":
 		a.instructions = append(a.instructions, instructions.JUMPNZ)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-
-			n := parseInt(value, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			n := parseInt(arg, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		}
+		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "CALL":
 		a.instructions = append(a.instructions, instructions.CALL)
-
-		if argIsDefine {
-			value := a.getDefine(arg)
-
-			n := parseInt(value, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		} else if argIsLabel {
-			value := a.getLabel(arg)
-			a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8((value & 0xff)))
-		} else {
-			n := parseInt(arg, 16, instruction)
-			a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-			a.instructions = append(a.instructions, uint8(n&0xff))
-		}
+		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "RET":
 		a.instructions = append(a.instructions, instructions.RET)
@@ -293,6 +147,36 @@ func (a *Assembler) parseInstruction(line string) {
 		log.Fatalf("encountered unknown instruction %s", instruction)
 	}
 
+}
+
+func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) {
+	if arg.IsDefine {
+		value := a.getDefine(arg.Value)
+		n := parseInt(value, 16, instruction)
+		a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
+		a.instructions = append(a.instructions, uint8(n&0xff))
+	} else if arg.IsLabel {
+		value := a.getLabel(arg.Value)
+		a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
+		a.instructions = append(a.instructions, uint8((value & 0xff)))
+	} else {
+		n := arg.AsUint()
+		a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
+		a.instructions = append(a.instructions, uint8(n&0xff))
+	}
+}
+
+func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) {
+	if arg.IsDefine {
+		value := a.getDefine(arg.Value)
+		a.instructions = append(a.instructions, uint8(parseInt(value, 16, instruction)))
+	} else if arg.IsLabel {
+		value := a.getLabel(arg.Value)
+		// a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
+		a.instructions = append(a.instructions, uint8((value & 0xff)))
+	} else {
+		a.instructions = append(a.instructions, arg.AsUint8())
+	}
 }
 
 var labelRegex = regexp.MustCompile(`^(\w+):`)
@@ -314,12 +198,18 @@ func (a *Assembler) getLabels(lines []string) {
 func (a *Assembler) GetInstructions(source string) []uint8 {
 	a.source = strings.TrimSpace(source)
 
+	l := lexer.New()
+	tokens, err := l.GetTokens(source)
+	if err != nil {
+		log.Fatalf("assembler failed: %v\n", err)
+	}
+
 	lines := strings.Split(source, "\n")
 
 	a.getLabels(lines)
 
-	for _, l := range lines {
-		a.ParseLine(l)
+	for _, t := range tokens {
+		a.ParseToken(t)
 	}
 
 	return a.instructions
