@@ -2,8 +2,7 @@ package instructions
 
 const (
 	HALT = iota
-	MOVA
-	MOVB
+	MOV
 	SWAP
 	LOAD
 	STORE
@@ -25,8 +24,7 @@ const (
 )
 
 var Names = map[uint8]string{
-	MOVA:   "MOVA",
-	MOVB:   "MOVB",
+	MOV:    "MOV",
 	SWAP:   "SWAP",
 	HALT:   "HALT",
 	LOAD:   "LOAD",
@@ -49,8 +47,7 @@ var Names = map[uint8]string{
 }
 
 var InstructionByName = map[string]uint8{
-	"MOVA":   MOVA,
-	"MOVB":   MOVB,
+	"MOV":    MOV,
 	"SWAP":   SWAP,
 	"HALT":   HALT,
 	"LOAD":   LOAD,
@@ -73,8 +70,7 @@ var InstructionByName = map[string]uint8{
 }
 
 var Width = map[uint8]int{
-	MOVA:   2,
-	MOVB:   2,
+	MOV:    3,
 	SWAP:   1,
 	HALT:   1,
 	LOAD:   3,

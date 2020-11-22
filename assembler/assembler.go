@@ -68,13 +68,22 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 	instruction := t.Value
 
 	switch instruction {
-	case "MOVA":
-		a.instructions = append(a.instructions, instructions.MOVA)
-		a.addInstructionArgs8(t.Args[0], instruction)
+	case "MOV":
 
-	case "MOVB":
-		a.instructions = append(a.instructions, instructions.MOVB)
-		a.addInstructionArgs8(t.Args[0], instruction)
+		a.instructions = append(a.instructions, instructions.MOV)
+
+		dest := t.Args[0]
+
+		switch dest.Value {
+		case "A":
+			a.instructions = append(a.instructions, 0x0)
+		case "B":
+			a.instructions = append(a.instructions, 0x1)
+		default:
+			log.Fatalf("encountered unknown destination for MOV instruction: %s", dest.Value)
+		}
+
+		a.addInstructionArgs8(t.Args[1], instruction)
 
 	case "SWAP":
 		a.instructions = append(a.instructions, instructions.SWAP)

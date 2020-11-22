@@ -77,12 +77,18 @@ func (vm *VM) execute(instruction uint8) {
 		vm.a, vm.b = vm.b, vm.a
 		vm.ip++
 
-	case instructions.MOVA:
-		vm.a = vm.fetch()
-		vm.ip++
+	case instructions.MOV:
+		dest := vm.fetch()
 
-	case instructions.MOVB:
-		vm.b = vm.fetch()
+		switch dest {
+		case 0x0:
+			vm.a = vm.fetch()
+		case 0x1:
+			vm.b = vm.fetch()
+		default:
+			log.Fatalf("encountered unknown destination for MOV, 0x%02x", dest)
+		}
+
 		vm.ip++
 
 	case instructions.STORE:

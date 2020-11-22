@@ -12,8 +12,8 @@ type TestCase struct {
 }
 
 var instructionTestCases = []TestCase{
-	TestCase{input: "MOVA 0xab", output: []uint8{instructions.MOVA, 0xab}},
-	TestCase{input: "MOVB 0xcd", output: []uint8{instructions.MOVB, 0xcd}},
+	TestCase{input: "MOV A 0xab", output: []uint8{instructions.MOV, 0x0, 0xab}},
+	TestCase{input: "MOV B 0xcd", output: []uint8{instructions.MOV, 0x1, 0xcd}},
 	TestCase{input: "SWAP", output: []uint8{instructions.SWAP}},
 	TestCase{input: "LOAD 0xae", output: []uint8{instructions.LOAD, 0x00, 0xae}},
 	TestCase{input: "LOAD 0xaecd", output: []uint8{instructions.LOAD, 0xae, 0xcd}},
@@ -38,10 +38,10 @@ var instructionTestCases = []TestCase{
 	TestCase{input: "JUMPZ 0xaecd", output: []uint8{instructions.JUMPZ, 0xae, 0xcd}},
 	TestCase{input: "JUMPNZ 0xcd", output: []uint8{instructions.JUMPNZ, 0x00, 0xcd}},
 	TestCase{input: "JUMPNZ 0xaecd", output: []uint8{instructions.JUMPNZ, 0xae, 0xcd}},
-	TestCase{input: "$test = 0xbc\nMOVA $test\n", output: []uint8{instructions.MOVA, 0xbc}},
-	TestCase{input: "$test = 0xabcd\nMOVA $test\n", output: []uint8{instructions.MOVA, 0xcd}},
-	TestCase{input: "$test = 0xbc\nMOVB $test\n", output: []uint8{instructions.MOVB, 0xbc}},
-	TestCase{input: "$test = 0xabcd\nMOVB $test\n", output: []uint8{instructions.MOVB, 0xcd}},
+	TestCase{input: "$test = 0xbc\nMOV A $test\n", output: []uint8{instructions.MOV, 0x0, 0xbc}},
+	TestCase{input: "$test = 0xabcd\nMOV A $test\n", output: []uint8{instructions.MOV, 0x0, 0xcd}},
+	TestCase{input: "$test = 0xbc\nMOV A $test\n", output: []uint8{instructions.MOV, 0x0, 0xbc}},
+	TestCase{input: "$test = 0xabcd\nMOV A $test\n", output: []uint8{instructions.MOV, 0x0, 0xcd}},
 	TestCase{input: "$test = 0xbc\nCALL $test\n", output: []uint8{instructions.CALL, 0x0, 0xbc}},
 	TestCase{input: "$test = 0xabcd\nCALL $test\n", output: []uint8{instructions.CALL, 0xab, 0xcd}},
 	TestCase{input: "$test = 0xbc\nJUMP $test\n", output: []uint8{instructions.JUMP, 0x0, 0xbc}},
