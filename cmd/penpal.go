@@ -9,14 +9,18 @@ func main() {
 	a := assembler.New()
 
 	source := `
-		CALL 0x6
-		MOVB 0xaa
-		HALT
-		
-		MOVA 0xff
+	MOV A 0x4
+	PUSH
+	MOV A 0x1
+	PUSH
+	CALL square 
+	HALT
+
+	square:
+		MOV A +5(fp)
+		MOV B +5(fp)
+		MUL
 		RET
-	
-		HALT
 	`
 
 	i := a.GetInstructions(source)
@@ -26,5 +30,5 @@ func main() {
 	vm.Load(i)
 	vm.Run()
 	vm.PrintReg()
-	vm.PrintMem(0xffff-10, 10)
+	vm.PrintMem(0, 0xf)
 }

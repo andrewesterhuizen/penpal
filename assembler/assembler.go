@@ -74,16 +74,27 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 
 		dest := t.Args[0]
 
+		var destination uint8
+
 		switch dest.Value {
 		case "A":
-			a.instructions = append(a.instructions, 0x0)
+			destination = instructions.DestRegisterA
 		case "B":
-			a.instructions = append(a.instructions, 0x1)
+			destination = instructions.DestRegisterB
 		default:
 			log.Fatalf("encountered unknown destination for MOV instruction: %s", dest.Value)
 		}
 
-		a.addInstructionArgs8(t.Args[1], instruction)
+		arg2 := t.Args[1]
+
+		var addressingMode uint8 = instructions.AddressingModeImmediate
+
+		if arg2.IsFPOffsetAddress {
+			addressingMode = instructions.AddressingModeFPRelative
+		}
+
+		a.instructions = append(a.instructions, instructions.EncodeFlags(addressingMode, destination))
+		a.addInstructionArgs8(arg2, instruction)
 
 	case "SWAP":
 		a.instructions = append(a.instructions, instructions.SWAP)
@@ -172,7 +183,9 @@ func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) {
 }
 
 func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) {
-	if arg.IsDefine {
+	if arg.IsFPOffsetAddress {
+		a.instructions = append(a.instructions, arg.AsUint8())
+	} else if arg.IsDefine {
 		value := a.getDefine(arg.Value)
 		a.instructions = append(a.instructions, uint8(parseInt(value, 16, instruction)))
 	} else if arg.IsLabel {

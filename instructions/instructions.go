@@ -21,6 +21,12 @@ const (
 	POP
 	CALL
 	RET
+
+	DestRegisterA = 0x0
+	DestRegisterB = 0x1
+
+	AddressingModeImmediate  = 0x0
+	AddressingModeFPRelative = 0x1
 )
 
 var Names = map[uint8]string{
@@ -88,6 +94,16 @@ var Width = map[uint8]int{
 	JUMPNZ: 3,
 	PUSH:   1,
 	POP:    1,
-	CALL:   1,
+	CALL:   3,
 	RET:    1,
+}
+
+func EncodeFlags(destination uint8, addressingMode uint8) uint8 {
+	return (destination << 4) | addressingMode
+}
+
+func DecodeFlags(flags uint8) (addressingMode uint8, destination uint8) {
+	destination = (flags & 0xf0) >> 4
+	addressingMode = (flags & 0xf)
+	return destination, addressingMode
 }

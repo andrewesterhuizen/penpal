@@ -1,16 +1,19 @@
 package lexer
 
 import (
+	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"unicode"
 )
 
 type Arg struct {
-	rawValue string
-	Value    string
-	IsDefine bool
-	IsLabel  bool
+	rawValue          string
+	Value             string
+	IsDefine          bool
+	IsLabel           bool
+	IsFPOffsetAddress bool
 }
 
 func parseInt(s string, base int) uint64 {
@@ -35,11 +38,28 @@ func (a *Arg) init() {
 	a.IsDefine = rv[0] == '$'
 	a.IsLabel = unicode.IsLetter(rune(rv[0]))
 
+	// TODO: This won't work for other offset addressing modes
+	a.IsFPOffsetAddress = rv[0] == '+' || rv[0] == '-'
+
 	switch {
 	case a.IsDefine:
-		a.Value = rv[1:len(rv)]
+		a.Value = rv[1:]
 	case a.IsLabel:
 		a.Value = rv
+	case a.IsFPOffsetAddress:
+		// hack to get this working :(
+		sign := rv[0]
+		value := strings.Split(rv[1:], "(fp)")[0] // decimal number string
+		valueInt := parseInt(value, 10)
+
+		if sign == '-' {
+			n := int8(valueInt) * int8(-1)
+			a.Value = fmt.Sprintf("0x%x", uint8(n))
+		} else {
+			a.Value = fmt.Sprintf("0x%x", valueInt)
+
+		}
+
 	default:
 		a.Value = rv
 	}

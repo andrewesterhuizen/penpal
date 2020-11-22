@@ -61,12 +61,16 @@ func (l *Lexer) parseLine(line string) error {
 	lineSplit := strings.Split(line, " ")
 
 	v := strings.TrimSpace(lineSplit[0])
-	args := lineSplit[1:len(lineSplit)]
+	args := lineSplit[1:]
 
 	switch {
+	case v[0:2] == "//": // comment
+		// skip, might need to be smarter about this in the future
+		// if we want to give error messages with line numbers
+		return nil
 	case v[0] == '$': // define
 		t.Type = TokenDefine
-		t.Value = v[1:len(v)]
+		t.Value = v[1:]
 		args, err := getDefineArgs(args)
 		if err != nil {
 			return fmt.Errorf("failed to parse define %s: %w", v, err)

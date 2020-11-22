@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/vm.go",
+            "program": "${workspaceFolder}/cmd/penpal.go",
             "env": {},
             "args": []
         }
