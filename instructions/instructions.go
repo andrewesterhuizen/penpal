@@ -21,6 +21,7 @@ const (
 	POP
 	CALL
 	RET
+	SEND
 
 	DestRegisterA = 0x0
 	DestRegisterB = 0x1
@@ -50,6 +51,7 @@ var Names = map[uint8]string{
 	POP:    "POP",
 	CALL:   "CALL",
 	RET:    "RET",
+	SEND:   "SEND",
 }
 
 var InstructionByName = map[string]uint8{
@@ -73,6 +75,7 @@ var InstructionByName = map[string]uint8{
 	"POP":    POP,
 	"CALL":   CALL,
 	"RET":    RET,
+	"SEND":   SEND,
 }
 
 var Width = map[uint8]int{
@@ -96,6 +99,7 @@ var Width = map[uint8]int{
 	POP:    1,
 	CALL:   3,
 	RET:    1,
+	SEND:   1,
 }
 
 func EncodeFlags(destination uint8, addressingMode uint8) uint8 {

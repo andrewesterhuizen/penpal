@@ -9,17 +9,54 @@ func main() {
 	a := assembler.New()
 
 	source := `
-	MOV A 0x4
+	MOV A 0x40
 	PUSH
 	MOV A 0x1
 	PUSH
-	CALL square 
+	CALL trig
+
 	HALT
 
-	square:
+	trig:
+		// note on
+		MOV A 0x63
+		PUSH
 		MOV A +5(fp)
-		MOV B +5(fp)
-		MUL
+		PUSH
+		MOV A 0x90
+		PUSH
+		MOV A 0x3
+		PUSH
+		CALL send_midi
+
+		// note off
+		MOV A 0x63
+		PUSH
+		MOV A +5(fp)
+		PUSH
+		MOV A 0x80
+		PUSH
+		MOV A 0x3
+		PUSH
+		CALL send_midi
+
+		RET
+	
+	send_midi:
+		// status
+		MOV A +5(fp) 
+		STORE 0x0 
+	
+		// data1
+		MOV A +6(fp) 
+		STORE 0x1 
+	
+		// data2
+		MOV A +7(fp) 
+		STORE 0x2
+	
+		SEND
+	
 		RET
 	`
 
@@ -31,4 +68,5 @@ func main() {
 	vm.Run()
 	vm.PrintReg()
 	vm.PrintMem(0, 0xf)
+	vm.Close()
 }

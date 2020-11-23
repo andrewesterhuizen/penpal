@@ -5,9 +5,12 @@ import (
 	"log"
 
 	"github.com/andrewesterhuizen/penpal/instructions"
+	"github.com/andrewesterhuizen/penpal/midi"
 )
 
 const memorySize = 0xffff
+
+const midiMessageStartLocation = 0x0
 
 type VM struct {
 	ip           uint16
@@ -17,10 +20,11 @@ type VM struct {
 	b            uint8
 	memory       [memorySize]uint8
 	instructions []uint8
+	midi         midi.MidiHandler
 }
 
 func New() VM {
-	vm := VM{}
+	vm := VM{midi: midi.NewPortMidiMidiHandler()}
 	vm.ip = 0
 	vm.sp = memorySize - 1
 	vm.fp = memorySize - 1
@@ -218,6 +222,14 @@ func (vm *VM) execute(instruction uint8) {
 		vm.fp += uint16(4) // frame size is always 4 but this could change
 		vm.ip = addr
 
+	case instructions.SEND:
+		status := vm.memory[midiMessageStartLocation]
+		data1 := vm.memory[midiMessageStartLocation+1]
+		data2 := vm.memory[midiMessageStartLocation+2]
+
+		vm.midi.Send(status, data1, data2)
+		vm.ip++
+
 	default:
 		log.Fatalf("encountered unknown instruction 0x%02x, name=%s", instruction, instructions.Names[instruction])
 	}
@@ -248,4 +260,8 @@ func (vm *VM) Run() {
 
 		vm.execute(ins[vm.ip])
 	}
+}
+
+func (vm *VM) Close() {
+	vm.midi.Close()
 }
