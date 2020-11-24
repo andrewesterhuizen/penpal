@@ -90,22 +90,22 @@ func (vm *VM) execute(instruction uint8) {
 	case instructions.MOV:
 		flags := vm.fetch()
 
-		mode, dest := instructions.DecodeFlags(flags)
+		mode, register := instructions.DecodeFlags(flags)
 
-		var destAddress *uint8
+		var dest *uint8
 
-		switch dest {
-		case instructions.DestRegisterA:
-			destAddress = &vm.a
-		case instructions.DestRegisterB:
-			destAddress = &vm.b
+		switch register {
+		case instructions.RegisterA:
+			dest = &vm.a
+		case instructions.RegisterB:
+			dest = &vm.b
 		default:
-			log.Fatalf("encountered unknown destination for MOV, 0x%02x", dest)
+			log.Fatalf("encountered unknown destination for MOV, 0x%02x", register)
 		}
 
 		switch mode {
 		case instructions.AddressingModeImmediate:
-			*destAddress = vm.fetch()
+			*dest = vm.fetch()
 		case instructions.AddressingModeFPRelative:
 			offset := int8(vm.fetch())
 			addr := vm.fp
@@ -119,7 +119,7 @@ func (vm *VM) execute(instruction uint8) {
 			}
 
 			v := vm.memory[addr]
-			*destAddress = v
+			*dest = v
 		default:
 			log.Fatalf("encountered unknown addressing mode for MOV, 0x%02x", mode)
 		}

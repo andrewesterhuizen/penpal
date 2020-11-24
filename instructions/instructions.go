@@ -24,8 +24,8 @@ const (
 	RAND
 	SEND
 
-	DestRegisterA = 0x0
-	DestRegisterB = 0x1
+	RegisterA = 0x0
+	RegisterB = 0x1
 
 	AddressingModeImmediate  = 0x0
 	AddressingModeFPRelative = 0x1
@@ -106,12 +106,12 @@ var Width = map[uint8]int{
 	SEND:   1,
 }
 
-func EncodeFlags(destination uint8, addressingMode uint8) uint8 {
-	return (destination << 4) | addressingMode
+func EncodeFlags(register uint8, addressingMode uint8) uint8 {
+	return (register << 4) | addressingMode
 }
 
-func DecodeFlags(flags uint8) (addressingMode uint8, destination uint8) {
-	destination = (flags & 0xf0) >> 4
+func DecodeFlags(flags uint8) (addressingMode uint8, register uint8) {
+	register = (flags & 0xf0) >> 4
 	addressingMode = (flags & 0xf)
-	return destination, addressingMode
+	return register, addressingMode
 }

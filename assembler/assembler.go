@@ -72,17 +72,16 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 
 		a.instructions = append(a.instructions, instructions.MOV)
 
-		dest := t.Args[0]
+		register := t.Args[0]
+		var dest uint8
 
-		var destination uint8
-
-		switch dest.Value {
+		switch register.Value {
 		case "A":
-			destination = instructions.DestRegisterA
+			dest = instructions.RegisterA
 		case "B":
-			destination = instructions.DestRegisterB
+			dest = instructions.RegisterB
 		default:
-			log.Fatalf("encountered unknown destination for MOV instruction: %s", dest.Value)
+			log.Fatalf("encountered unknown destination for MOV instruction: %s", register.Value)
 		}
 
 		arg2 := t.Args[1]
@@ -93,7 +92,7 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 			addressingMode = instructions.AddressingModeFPRelative
 		}
 
-		a.instructions = append(a.instructions, instructions.EncodeFlags(addressingMode, destination))
+		a.instructions = append(a.instructions, instructions.EncodeFlags(addressingMode, dest))
 		a.addInstructionArgs8(arg2, instruction)
 
 	case "SWAP":
