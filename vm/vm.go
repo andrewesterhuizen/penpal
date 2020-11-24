@@ -3,6 +3,8 @@ package vm
 import (
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/andrewesterhuizen/penpal/instructions"
 	"github.com/andrewesterhuizen/penpal/midi"
@@ -24,6 +26,8 @@ type VM struct {
 }
 
 func New() VM {
+	rand.Seed(time.Now().UnixNano())
+
 	vm := VM{midi: midi.NewPortMidiMidiHandler()}
 	vm.ip = 0
 	vm.sp = memorySize - 1
@@ -228,6 +232,10 @@ func (vm *VM) execute(instruction uint8) {
 		data2 := vm.memory[midiMessageStartLocation+2]
 
 		vm.midi.Send(status, data1, data2)
+		vm.ip++
+
+	case instructions.RAND:
+		vm.a = uint8(rand.Intn(255))
 		vm.ip++
 
 	default:

@@ -143,6 +143,9 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 	case "SEND":
 		a.instructions = append(a.instructions, instructions.SEND)
 
+	case "RAND":
+		a.instructions = append(a.instructions, instructions.RAND)
+
 	case "JUMP":
 		a.instructions = append(a.instructions, instructions.JUMP)
 		a.addInstructionArgs16(t.Args[0], instruction)

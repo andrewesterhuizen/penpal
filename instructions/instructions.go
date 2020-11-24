@@ -21,6 +21,7 @@ const (
 	POP
 	CALL
 	RET
+	RAND
 	SEND
 
 	DestRegisterA = 0x0
@@ -52,6 +53,7 @@ var Names = map[uint8]string{
 	CALL:   "CALL",
 	RET:    "RET",
 	SEND:   "SEND",
+	RAND:   "RAND",
 }
 
 var InstructionByName = map[string]uint8{
@@ -75,6 +77,7 @@ var InstructionByName = map[string]uint8{
 	"POP":    POP,
 	"CALL":   CALL,
 	"RET":    RET,
+	"RAND":   RAND,
 	"SEND":   SEND,
 }
 
@@ -99,6 +102,7 @@ var Width = map[uint8]int{
 	POP:    1,
 	CALL:   3,
 	RET:    1,
+	RAND:   1,
 	SEND:   1,
 }
 
