@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/andrewesterhuizen/penpal/assembler"
+	"github.com/andrewesterhuizen/penpal/midi"
 	"github.com/andrewesterhuizen/penpal/vm"
 )
 
@@ -62,7 +63,7 @@ func main() {
 
 	i := a.GetInstructions(source)
 
-	vm := vm.New()
+	vm := vm.New(midi.NewPortMidiMidiHandler())
 
 	vm.Load(i)
 	vm.Run()

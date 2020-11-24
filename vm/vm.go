@@ -25,13 +25,17 @@ type VM struct {
 	midi         midi.MidiHandler
 }
 
-func New() VM {
+func New(midi midi.MidiHandler) VM {
 	rand.Seed(time.Now().UnixNano())
 
-	vm := VM{midi: midi.NewPortMidiMidiHandler()}
+	vm := VM{midi: midi}
 	vm.ip = 0
 	vm.sp = memorySize - 1
 	vm.fp = memorySize - 1
+
+	midi.OnRequestMidiClockData(vm.getMidiClockData)
+	midi.OnTick(vm.onMidiClockTick)
+	midi.StartClock()
 
 	return vm
 }
@@ -246,6 +250,14 @@ func (vm *VM) execute(instruction uint8) {
 
 func (vm *VM) Load(instructions []uint8) {
 	vm.instructions = instructions
+}
+
+func (vm *VM) getMidiClockData() (bpm uint8, ppqn uint8) {
+	// TODO: get these from memory
+	return 120, 24
+}
+
+func (vm *VM) onMidiClockTick() {
 }
 
 func (vm *VM) PrintReg() {
