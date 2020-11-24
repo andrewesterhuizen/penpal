@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/andrewesterhuizen/penpal/assembler"
 	"github.com/andrewesterhuizen/penpal/midi"
 	"github.com/andrewesterhuizen/penpal/vm"
@@ -64,6 +67,24 @@ func main() {
 	i := a.GetInstructions(source)
 
 	vm := vm.New(midi.NewPortMidiMidiHandler())
+
+	msPerMinute := 60 * 1000
+
+	// TODO: clock should be enabled according to a flag
+	go func() {
+		for {
+			bpm, ppqn := vm.GetMidiClockData()
+			fmt.Println(bpm)
+			if bpm == 0 || ppqn == 0 {
+				time.Sleep(10 * time.Millisecond)
+				continue
+			}
+
+			interval := (msPerMinute / int(bpm)) / int(ppqn)
+			vm.Tick()
+			time.Sleep(time.Duration(interval) * time.Millisecond)
+		}
+	}()
 
 	vm.Load(i)
 	vm.Run()

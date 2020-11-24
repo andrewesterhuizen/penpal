@@ -12,7 +12,9 @@ import (
 
 const memorySize = 0xffff
 
-const midiMessageStartLocation = 0x0
+const midiMessageMemoryLocation = 0x0   // 3 bytes
+const midiClockBPMMemoryLocation = 0x4  // 1 byte
+const midiClockPPQNMemoryLocation = 0x5 // 1 byte
 
 type VM struct {
 	ip           uint16
@@ -32,10 +34,6 @@ func New(midi midi.MidiHandler) VM {
 	vm.ip = 0
 	vm.sp = memorySize - 1
 	vm.fp = memorySize - 1
-
-	midi.OnRequestMidiClockData(vm.getMidiClockData)
-	midi.OnTick(vm.onMidiClockTick)
-	midi.StartClock()
 
 	return vm
 }
@@ -231,9 +229,9 @@ func (vm *VM) execute(instruction uint8) {
 		vm.ip = addr
 
 	case instructions.SEND:
-		status := vm.memory[midiMessageStartLocation]
-		data1 := vm.memory[midiMessageStartLocation+1]
-		data2 := vm.memory[midiMessageStartLocation+2]
+		status := vm.memory[midiMessageMemoryLocation]
+		data1 := vm.memory[midiMessageMemoryLocation+1]
+		data2 := vm.memory[midiMessageMemoryLocation+2]
 
 		vm.midi.Send(status, data1, data2)
 		vm.ip++
@@ -252,12 +250,12 @@ func (vm *VM) Load(instructions []uint8) {
 	vm.instructions = instructions
 }
 
-func (vm *VM) getMidiClockData() (bpm uint8, ppqn uint8) {
-	// TODO: get these from memory
-	return 120, 24
+func (vm *VM) GetMidiClockData() (bpm uint8, ppqn uint8) {
+	return vm.memory[midiClockBPMMemoryLocation], vm.memory[midiClockPPQNMemoryLocation]
 }
 
-func (vm *VM) onMidiClockTick() {
+func (vm *VM) Tick() {
+	// fmt.Println("Tick")
 }
 
 func (vm *VM) PrintReg() {
