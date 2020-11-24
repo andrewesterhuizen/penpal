@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -9,7 +10,14 @@ import (
 	"github.com/andrewesterhuizen/penpal/lexer"
 )
 
+const HeaderSize = 10
+
+type Config struct {
+	disableHeader bool
+}
+
 type Assembler struct {
+	config       Config
 	index        int
 	source       string
 	instructions []uint8
@@ -17,8 +25,8 @@ type Assembler struct {
 	labels       map[string]uint16
 }
 
-func New() Assembler {
-	a := Assembler{}
+func New(config Config) Assembler {
+	a := Assembler{config: config}
 	a.defines = make(map[string]string)
 	a.labels = make(map[string]uint16)
 	return a
@@ -62,6 +70,10 @@ func (a *Assembler) getLabel(d string) uint16 {
 	}
 
 	return v
+}
+
+func (a *Assembler) appendInstruction(b uint8) {
+	a.instructions = append(a.instructions, b)
 }
 
 func (a *Assembler) addInstruction(t lexer.Token) {
@@ -230,7 +242,31 @@ func (a *Assembler) getLabels(tokens []lexer.Token) {
 	}
 }
 
-func (a *Assembler) GetInstructions(source string) []uint8 {
+func (a *Assembler) addHeader() error {
+	entryPointAddress, exists := a.labels["__start"]
+
+	// check for entry point
+	if !exists {
+		return fmt.Errorf("source has no entry point")
+	}
+
+	for _, b := range []byte("PENPAL") {
+		a.appendInstruction(b)
+	}
+
+	// version
+	a.appendInstruction(0)
+	a.appendInstruction(1)
+
+	// entry point
+	entryPointAddress += HeaderSize
+	a.appendInstruction(byte((entryPointAddress & 0xff00) >> 8))
+	a.appendInstruction(byte(entryPointAddress & 0xff))
+
+	return nil
+}
+
+func (a *Assembler) GetInstructions(source string) ([]uint8, error) {
 	a.source = strings.TrimSpace(source)
 
 	l := lexer.New()
@@ -241,9 +277,21 @@ func (a *Assembler) GetInstructions(source string) []uint8 {
 
 	a.getLabels(tokens)
 
+	if !a.config.disableHeader {
+		err = a.addHeader()
+		if err != nil {
+			return nil, err
+		}
+
+		// update labels to account for header size
+		for l := range a.labels {
+			a.labels[l] += uint16(HeaderSize)
+		}
+	}
+
 	for _, t := range tokens {
 		a.ParseToken(t)
 	}
 
-	return a.instructions
+	return a.instructions, nil
 }

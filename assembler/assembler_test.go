@@ -84,21 +84,43 @@ var instructionTestCases = []TestCase{
 
 func TestInstructions(t *testing.T) {
 	for _, tc := range instructionTestCases {
-		a := New()
+		a := New(Config{disableHeader: true})
 
-		ins := a.GetInstructions(tc.input)
+		ins, err := a.GetInstructions(tc.input)
+		if err != nil {
+			t.Errorf("failed to get instructions due to error: %s, with input %s", err, tc.input)
+			return
+		}
 
 		if len(ins) != len(tc.output) {
-			t.Errorf("expected %d instuctions and got %d", len(tc.output), len(ins))
+			t.Errorf("expected %d instuctions and got %d, with input %s", len(tc.output), len(ins), tc.input)
 			return
 		}
 
 		for i, in := range tc.output {
 			if in != ins[i] {
-				t.Errorf("expected 0x%02x and got 0x%02x", in, ins[i])
+				t.Errorf("expected 0x%02x and got 0x%02x, with input %s", in, ins[i], tc.input)
 			}
 		}
+	}
+}
 
+func TestAssembler_NoEntryPoint_ReturnsError(t *testing.T) {
+	a := New(Config{})
+	_, err := a.GetInstructions("SWAP\n")
+
+	if err == nil {
+		t.Errorf("expected assembler to return error for source with no entry point")
+	}
+}
+
+// this test should fail if I forget to update the HeaderSize constant
+func TestAssembler_EntryPointSkipsHeader(t *testing.T) {
+	a := New(Config{})
+	ins, _ := a.GetInstructions("__start:\nSWAP\nOR\nADD\n")
+
+	if (ins[HeaderSize] != instructions.SWAP) || (ins[HeaderSize+1] != instructions.OR) || (ins[HeaderSize+2] != instructions.ADD) {
+		t.Errorf("expected assembler to return error for source with no entry point")
 	}
 
 }

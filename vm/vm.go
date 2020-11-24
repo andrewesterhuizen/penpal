@@ -247,6 +247,16 @@ func (vm *VM) execute(instruction uint8) {
 }
 
 func (vm *VM) Load(instructions []uint8) {
+	// decode header
+	// versionMajor := instructions[0x6]
+	// versionMinor := instructions[0x7]
+
+	entryPointAddressH := instructions[0x8]
+	entryPointAddressL := instructions[0x9]
+
+	entryPoint := (uint16(entryPointAddressH) << 8) | uint16(entryPointAddressL)
+	vm.ip = entryPoint
+
 	vm.instructions = instructions
 }
 

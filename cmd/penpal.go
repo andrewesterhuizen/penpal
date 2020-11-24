@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/andrewesterhuizen/penpal/assembler"
@@ -10,16 +11,20 @@ import (
 )
 
 func main() {
-	a := assembler.New()
+	a := assembler.New(assembler.Config{})
 
 	source := `
-	MOV A 0x40
-	PUSH
-	MOV A 0x1
-	PUSH
-	CALL trig
+	// this should be skipped
+	HALT 
 
-	HALT
+	__start:
+		MOV A 0x40
+		PUSH
+		MOV A 0x1
+		PUSH
+		CALL trig
+
+		HALT
 
 	trig:
 		// note on
@@ -64,7 +69,12 @@ func main() {
 		RET
 	`
 
-	i := a.GetInstructions(source)
+	i, err := a.GetInstructions(source)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(i)
 
 	vm := vm.New(midi.NewPortMidiMidiHandler())
 
