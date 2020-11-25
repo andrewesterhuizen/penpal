@@ -26,6 +26,8 @@ var instructionTestCases = []TestCase{
 	{input: "PUSH A", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterA}},
 	{input: "PUSH B", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterB}},
 	{input: "PUSH 0xbd", output: []uint8{instructions.PUSH, instructions.Value, 0xbd}},
+	{input: "PUSH +1(fp)", output: []uint8{instructions.PUSH, instructions.FramePointerRelativeAddress, 0x1}},
+	{input: "PUSH -1(fp)", output: []uint8{instructions.PUSH, instructions.FramePointerRelativeAddress, 0xff}},
 	{input: "CALL 0xbeaf", output: []uint8{instructions.CALL, 0xbe, 0xaf}},
 	{input: "RET", output: []uint8{instructions.RET}},
 	{input: "ADD", output: []uint8{instructions.ADD}},

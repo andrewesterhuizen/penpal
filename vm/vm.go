@@ -76,6 +76,19 @@ func (vm *VM) fetch16() uint16 {
 	return (h << 8) | l
 }
 
+func (vm *VM) getFramePointerRelativeAddress(offset int8) uint16 {
+	addr := vm.fp
+
+	if offset >= 0 {
+		addr += uint16(offset)
+	} else {
+		offset *= -1
+		addr -= uint16(offset)
+	}
+
+	return addr
+}
+
 func (vm *VM) execute(instruction uint8) {
 	name, exists := instructions.Names[instruction]
 	if !exists {
@@ -109,16 +122,7 @@ func (vm *VM) execute(instruction uint8) {
 			*dest = vm.fetch()
 		case instructions.AddressingModeFPRelative:
 			offset := int8(vm.fetch())
-			addr := vm.fp
-
-			// is there an easier way to do this?
-			if offset >= 0 {
-				addr += uint16(offset)
-			} else {
-				offset *= -1
-				addr -= uint16(offset)
-			}
-
+			addr := vm.getFramePointerRelativeAddress(offset)
 			v := vm.memory[addr]
 			*dest = v
 		default:
@@ -203,10 +207,11 @@ func (vm *VM) execute(instruction uint8) {
 			default:
 				log.Fatalf("PUSH: encountered unknown register 0x%02x\n", value)
 			}
-
+		case instructions.FramePointerRelativeAddress:
+			addr := vm.getFramePointerRelativeAddress(int8(value))
+			vm.push(vm.memory[addr])
 		case instructions.Value:
 			vm.push(value)
-
 		default:
 			log.Fatalf("PUSH: encountered unknown mode 0x%02x\n", mode)
 		}

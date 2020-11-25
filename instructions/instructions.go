@@ -24,8 +24,9 @@ const (
 	RAND
 	SEND
 
-	Value    = 0x0
-	Register = 0x1
+	Value                       = 0x0
+	Register                    = 0x1
+	FramePointerRelativeAddress = 0x2
 
 	RegisterA = 0x0
 	RegisterB = 0x1

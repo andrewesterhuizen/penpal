@@ -127,6 +127,9 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 			if arg.IsRegister {
 				a.instructions = append(a.instructions, instructions.Register)
 				a.instructions = append(a.instructions, instructions.RegistersByName[arg.Value])
+			} else if arg.IsFPOffsetAddress {
+				a.instructions = append(a.instructions, instructions.FramePointerRelativeAddress)
+				a.instructions = append(a.instructions, arg.AsUint8())
 			} else {
 				a.instructions = append(a.instructions, instructions.Value)
 				a.instructions = append(a.instructions, arg.AsUint8())
