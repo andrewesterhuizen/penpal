@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -13,6 +14,7 @@ import (
 
 func main() {
 	midiHandler := midi.NewPortMidiMidiHandler()
+	source := ""
 
 	args := os.Args[1:]
 	if len(args) > 0 {
@@ -33,59 +35,19 @@ func main() {
 
 			return
 		default:
-			// try open file
+			// TODO: handle binary files too
+
+			f, err := ioutil.ReadFile(arg0)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			source = string(f)
 		}
 
-		fmt.Println(arg0)
 	}
 
 	a := assembler.New(assembler.Config{})
-
-	source := `
-	// this should be skipped
-	HALT 
-
-	__start:
-		PUSH 0x40
-		PUSH 0x1
-		CALL trig
-
-		HALT
-
-	trig:
-		// note on
-		PUSH 0x63
-		PUSH +5(fp)
-		PUSH 0x90
-		PUSH 0x3
-		CALL send_midi
-
-		// note off
-		PUSH 0x63
-		PUSH +5(fp)
-		PUSH 0x80
-		PUSH 0x3
-		CALL send_midi
-
-		RET
-	
-	send_midi:
-		// status
-		MOV A +5(fp) 
-		STORE 0x0 
-	
-		// data1
-		MOV A +6(fp) 
-		STORE 0x1 
-	
-		// data2
-		MOV A +7(fp) 
-		STORE 0x2
-	
-		SEND
-	
-		RET
-	`
 
 	i, err := a.GetInstructions(source)
 	if err != nil {
