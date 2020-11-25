@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/andrewesterhuizen/penpal/assembler"
@@ -11,6 +12,33 @@ import (
 )
 
 func main() {
+	midiHandler := midi.NewPortMidiMidiHandler()
+
+	args := os.Args[1:]
+	if len(args) > 0 {
+		arg0 := args[0]
+		switch arg0 {
+		case "devices":
+			inputs, outputs := midiHandler.GetDevices()
+
+			fmt.Println("inputs:")
+			for _, d := range inputs {
+				fmt.Printf("[%v] %s\n", d.Id, d.Name)
+			}
+
+			fmt.Println("outputs:")
+			for _, d := range outputs {
+				fmt.Printf("[%v] %s\n", d.Id, d.Name)
+			}
+
+			return
+		default:
+			// try open file
+		}
+
+		fmt.Println(arg0)
+	}
+
 	a := assembler.New(assembler.Config{})
 
 	source := `
@@ -66,7 +94,7 @@ func main() {
 
 	fmt.Println(i)
 
-	vm := vm.New(midi.NewPortMidiMidiHandler())
+	vm := vm.New(midiHandler)
 
 	msPerMinute := 60 * 1000
 

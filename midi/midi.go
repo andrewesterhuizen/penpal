@@ -7,9 +7,15 @@ import (
 	"github.com/rakyll/portmidi"
 )
 
+type Device struct {
+	Name string
+	Id   int
+}
+
 type MidiHandler interface {
 	Send(status byte, data1 byte, data2 byte)
 	Close()
+	GetDevices() (inputs []Device, ouputs []Device)
 }
 
 type PortMidiMidiHandler struct {
@@ -30,6 +36,25 @@ func NewPortMidiMidiHandler() MidiHandler {
 	}
 
 	return &PortMidiMidiHandler{midi: out}
+}
+
+func (m *PortMidiMidiHandler) GetDevices() (inputs []Device, outputs []Device) {
+	n := portmidi.CountDevices()
+
+	inputs = []Device{}
+	outputs = []Device{}
+
+	for i := 0; i < n; i++ {
+		device := portmidi.Info(portmidi.DeviceID(i))
+		if device.IsInputAvailable {
+			inputs = append(inputs, Device{Id: i, Name: device.Name})
+		}
+		if device.IsOutputAvailable {
+			outputs = append(outputs, Device{Id: i, Name: device.Name})
+		}
+	}
+
+	return inputs, outputs
 }
 
 func (m *PortMidiMidiHandler) Send(status byte, data1 byte, data2 byte) {
