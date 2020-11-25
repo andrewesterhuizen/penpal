@@ -41,9 +41,7 @@ func compileFromFile(filename string) {
 		log.Fatal(err)
 	}
 
-	for _, i := range program {
-		binary.Write(os.Stdout, binary.LittleEndian, i)
-	}
+	binary.Write(os.Stdout, binary.LittleEndian, program)
 }
 
 func loadProgramFromFile(fileName string) []byte {
@@ -52,8 +50,8 @@ func loadProgramFromFile(fileName string) []byte {
 		log.Fatal(err)
 	}
 
+	// determine if file is compiled binary by checking header
 	header := []byte("PENPAL")
-
 	binary := true
 
 	for i, c := range header {
@@ -64,7 +62,6 @@ func loadProgramFromFile(fileName string) []byte {
 	}
 
 	if binary {
-		fmt.Println(f)
 		return f
 	}
 
@@ -74,8 +71,6 @@ func loadProgramFromFile(fileName string) []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(program)
 
 	return program
 }
@@ -91,7 +86,6 @@ func executeProgramFromFile(filename string) {
 	go func() {
 		for {
 			bpm, ppqn := vm.GetMidiClockData()
-			fmt.Println(bpm)
 			if bpm == 0 || ppqn == 0 {
 				time.Sleep(10 * time.Millisecond)
 				continue
@@ -105,8 +99,8 @@ func executeProgramFromFile(filename string) {
 
 	vm.Load(program)
 	vm.Run()
-	vm.PrintReg()
-	vm.PrintMem(0, 0xf)
+	// vm.PrintReg()
+	// vm.PrintMem(0, 0xf)
 	vm.Close()
 }
 
@@ -130,6 +124,8 @@ func main() {
 			executeProgramFromFile(args[0])
 		}
 
+		return
 	}
 
+	// TODO: print help info if no args supplied
 }
