@@ -76,7 +76,7 @@ func (a *Assembler) appendInstruction(b uint8) {
 	a.instructions = append(a.instructions, b)
 }
 
-func (a *Assembler) appendInstructions(bytes []uint8) {
+func (a *Assembler) appendInstructions(bytes ...uint8) {
 	for _, b := range bytes {
 		a.instructions = append(a.instructions, b)
 	}
@@ -107,7 +107,7 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 			addressingMode = instructions.AddressingModeFPRelative
 		}
 
-		a.appendInstructions(instructions.MovEncode(addressingMode, dest, a.getInstructionArgs8(arg2, instruction)))
+		a.appendInstructions(instructions.MOV, addressingMode, dest, a.getInstructionArgs8(arg2, instruction))
 
 	case "SWAP":
 		a.instructions = append(a.instructions, instructions.SWAP)

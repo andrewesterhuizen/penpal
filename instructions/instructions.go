@@ -113,7 +113,3 @@ var RegistersByName = map[string]uint8{
 	"A": RegisterA,
 	"B": RegisterB,
 }
-
-func MovEncode(addressingMode byte, register byte, value byte) []byte {
-	return []byte{MOV, addressingMode, register, value}
-}
