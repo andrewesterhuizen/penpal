@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,77 +13,77 @@ import (
 	"github.com/andrewesterhuizen/penpal/vm"
 )
 
-func main() {
+func printMidiDevices() {
 	midiHandler := midi.NewPortMidiMidiHandler()
-	source := ""
+	inputs, outputs := midiHandler.GetDevices()
 
-	args := os.Args[1:]
-	if len(args) > 0 {
-		arg0 := args[0]
-		switch arg0 {
-		case "devices":
-			inputs, outputs := midiHandler.GetDevices()
-
-			fmt.Println("inputs:")
-			for _, d := range inputs {
-				fmt.Printf("[%v] %s\n", d.Id, d.Name)
-			}
-
-			fmt.Println("outputs:")
-			for _, d := range outputs {
-				fmt.Printf("[%v] %s\n", d.Id, d.Name)
-			}
-
-			return
-
-		case "compile":
-			if len(args) < 2 {
-				log.Fatal("no input file")
-			}
-
-			file := args[1]
-
-			f, err := ioutil.ReadFile(file)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			a := assembler.New(assembler.Config{})
-
-			instructions, err := a.GetInstructions(string(f))
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			for _, i := range instructions {
-				fmt.Printf("%c", i)
-			}
-
-			return
-
-		default:
-			// TODO: handle binary files too
-
-			f, err := ioutil.ReadFile(arg0)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			source = string(f)
-		}
-
+	fmt.Println("inputs:")
+	for _, d := range inputs {
+		fmt.Printf("[%v] %s\n", d.Id, d.Name)
 	}
 
-	a := assembler.New(assembler.Config{})
+	fmt.Println("outputs:")
+	for _, d := range outputs {
+		fmt.Printf("[%v] %s\n", d.Id, d.Name)
+	}
+}
 
-	i, err := a.GetInstructions(source)
+func compileFromFile(filename string) {
+	f, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(i)
+	a := assembler.New(assembler.Config{})
 
-	vm := vm.New(midiHandler)
+	program, err := a.GetInstructions(string(f))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, i := range program {
+		binary.Write(os.Stdout, binary.LittleEndian, i)
+	}
+}
+
+func loadProgramFromFile(fileName string) []byte {
+	f, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	header := []byte("PENPAL")
+
+	binary := true
+
+	for i, c := range header {
+		if f[i] != c {
+			binary = false
+			break
+		}
+	}
+
+	if binary {
+		fmt.Println(f)
+		return f
+	}
+
+	a := assembler.New(assembler.Config{})
+
+	program, err := a.GetInstructions(string(f))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(program)
+
+	return program
+}
+
+func executeProgramFromFile(filename string) {
+	program := loadProgramFromFile(filename)
+
+	vm := vm.New(midi.NewPortMidiMidiHandler())
 
 	msPerMinute := 60 * 1000
 
@@ -102,9 +103,33 @@ func main() {
 		}
 	}()
 
-	vm.Load(i)
+	vm.Load(program)
 	vm.Run()
 	vm.PrintReg()
 	vm.PrintMem(0, 0xf)
 	vm.Close()
+}
+
+func main() {
+	args := os.Args[1:]
+	if len(args) > 0 {
+		switch args[0] {
+		case "devices":
+			printMidiDevices()
+			return
+
+		case "compile":
+			if len(args) < 2 {
+				log.Fatal("no input file")
+			}
+
+			compileFromFile(args[1])
+			return
+
+		default:
+			executeProgramFromFile(args[0])
+		}
+
+	}
+
 }
