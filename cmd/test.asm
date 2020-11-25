@@ -1,15 +1,10 @@
 send_midi:
     // status
-    MOV A +5(fp) 
-    STORE 0x0 
-
+    STORE +5(fp) 0x0 
     // data1
-    MOV A +6(fp) 
-    STORE 0x1 
-
+    STORE +6(fp) 0x1 
     // data2
-    MOV A +7(fp) 
-    STORE 0x2
+    STORE +7(fp) 0x2
 
     SEND
     RET

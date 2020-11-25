@@ -19,8 +19,14 @@ var instructionTestCases = []TestCase{
 	{input: "SWAP", output: []uint8{instructions.SWAP}},
 	{input: "LOAD 0xae", output: []uint8{instructions.LOAD, 0x00, 0xae}},
 	{input: "LOAD 0xaecd", output: []uint8{instructions.LOAD, 0xae, 0xcd}},
-	{input: "STORE 0xae", output: []uint8{instructions.STORE, 0x00, 0xae}},
-	{input: "STORE 0xaecd", output: []uint8{instructions.STORE, 0xae, 0xcd}},
+	{input: "STORE 0xae", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "STORE 0xaecd", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
+	{input: "STORE A 0xae", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "STORE B 0xaecd", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterB, 0xae, 0xcd}},
+	{input: "STORE +1(fp) 0xae", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0x1, 0x00, 0xae}},
+	{input: "STORE +1(fp) 0xaecd", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0x1, 0xae, 0xcd}},
+	{input: "STORE -1(fp) 0xae", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0xff, 0x00, 0xae}},
+	{input: "STORE -1(fp) 0xaecd", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0xff, 0xae, 0xcd}},
 	{input: "POP", output: []uint8{instructions.POP}},
 	{input: "PUSH", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterA}},
 	{input: "PUSH A", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterA}},
@@ -104,7 +110,7 @@ func TestInstructions(t *testing.T) {
 
 		for i, in := range tc.output {
 			if in != ins[i] {
-				t.Errorf("expected 0x%02x and got 0x%02x, with input %s", in, ins[i], tc.input)
+				t.Errorf("expected 0x%02x and got 0x%02x at pos %d, with input %s", in, ins[i], i, tc.input)
 			}
 		}
 	}

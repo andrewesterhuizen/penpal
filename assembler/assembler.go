@@ -143,7 +143,27 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 
 	case "STORE":
 		a.instructions = append(a.instructions, instructions.STORE)
-		a.addInstructionArgs16(t.Args[0], instruction)
+
+		if len(t.Args) == 2 {
+			arg0 := t.Args[0]
+			if arg0.IsFPOffsetAddress {
+				a.instructions = append(a.instructions, instructions.FramePointerRelativeAddress)
+				a.instructions = append(a.instructions, t.Args[0].AsUint8())
+			} else if arg0.IsRegister {
+				a.instructions = append(a.instructions, instructions.Register)
+				register := instructions.RegistersByName[t.Args[0].Value]
+				a.instructions = append(a.instructions, register)
+
+			} else {
+				log.Fatalf("STORE: encountered unknown operand type %v", arg0)
+			}
+
+			a.addInstructionArgs16(t.Args[1], instruction)
+		} else {
+			a.instructions = append(a.instructions, instructions.Register)
+			a.instructions = append(a.instructions, instructions.RegisterA)
+			a.addInstructionArgs16(t.Args[0], instruction)
+		}
 
 	case "ADD":
 		a.instructions = append(a.instructions, instructions.ADD)
