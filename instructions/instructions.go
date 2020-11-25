@@ -24,6 +24,9 @@ const (
 	RAND
 	SEND
 
+	Value    = 0x0
+	Register = 0x1
+
 	RegisterA = 0x0
 	RegisterB = 0x1
 
@@ -98,12 +101,17 @@ var Width = map[uint8]int{
 	JUMP:   3,
 	JUMPZ:  3,
 	JUMPNZ: 3,
-	PUSH:   1,
+	PUSH:   3,
 	POP:    1,
 	CALL:   3,
 	RET:    1,
 	RAND:   1,
 	SEND:   1,
+}
+
+var RegistersByName = map[string]uint8{
+	"A": RegisterA,
+	"B": RegisterB,
 }
 
 func MovEncode(addressingMode byte, register byte, value byte) []byte {

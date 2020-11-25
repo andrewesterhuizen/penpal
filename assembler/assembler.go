@@ -120,7 +120,23 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 		a.instructions = append(a.instructions, instructions.POP)
 
 	case "PUSH":
-		a.instructions = append(a.instructions, instructions.PUSH)
+		if len(t.Args) == 1 {
+			a.instructions = append(a.instructions, instructions.PUSH)
+			arg := t.Args[0]
+
+			if arg.IsRegister {
+				a.instructions = append(a.instructions, instructions.Register)
+				a.instructions = append(a.instructions, instructions.RegistersByName[arg.Value])
+			} else {
+				a.instructions = append(a.instructions, instructions.Value)
+				a.instructions = append(a.instructions, arg.AsUint8())
+			}
+
+		} else {
+			a.instructions = append(a.instructions, instructions.PUSH)
+			a.instructions = append(a.instructions, instructions.Register)
+			a.instructions = append(a.instructions, instructions.RegisterA)
+		}
 
 	case "STORE":
 		a.instructions = append(a.instructions, instructions.STORE)

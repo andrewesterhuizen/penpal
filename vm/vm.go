@@ -190,7 +190,27 @@ func (vm *VM) execute(instruction uint8) {
 		}
 
 	case instructions.PUSH:
-		vm.push(vm.a)
+		mode := vm.fetch()
+		value := vm.fetch()
+
+		switch mode {
+		case instructions.Register:
+			switch value {
+			case instructions.RegisterA:
+				vm.push(vm.a)
+			case instructions.RegisterB:
+				vm.push(vm.b)
+			default:
+				log.Fatalf("PUSH: encountered unknown register 0x%02x\n", value)
+			}
+
+		case instructions.Value:
+			vm.push(value)
+
+		default:
+			log.Fatalf("PUSH: encountered unknown mode 0x%02x\n", mode)
+		}
+
 		vm.ip++
 
 	case instructions.POP:

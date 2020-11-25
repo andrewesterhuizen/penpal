@@ -18,35 +18,27 @@ func main() {
 	HALT 
 
 	__start:
-		MOV A 0x40
-		PUSH
-		MOV A 0x1
-		PUSH
+		PUSH 0x40
+		PUSH 0x1
 		CALL trig
 
 		HALT
 
 	trig:
 		// note on
-		MOV A 0x63
-		PUSH
+		PUSH 0x63
 		MOV A +5(fp)
 		PUSH
-		MOV A 0x90
-		PUSH
-		MOV A 0x3
-		PUSH
+		PUSH 0x90
+		PUSH 0x3
 		CALL send_midi
 
 		// note off
-		MOV A 0x63
-		PUSH
+		PUSH 0x63
 		MOV A +5(fp)
 		PUSH
-		MOV A 0x80
-		PUSH
-		MOV A 0x3
-		PUSH
+		PUSH 0x80
+		PUSH 0x3
 		CALL send_midi
 
 		RET

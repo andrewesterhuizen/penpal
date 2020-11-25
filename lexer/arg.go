@@ -14,6 +14,7 @@ type Arg struct {
 	IsDefine          bool
 	IsLabel           bool
 	IsFPOffsetAddress bool
+	IsRegister        bool
 }
 
 func parseInt(s string, base int) uint64 {
@@ -40,6 +41,8 @@ func (a *Arg) init() {
 
 	// TODO: This won't work for other offset addressing modes
 	a.IsFPOffsetAddress = rv[0] == '+' || rv[0] == '-'
+
+	a.IsRegister = len(rv) == 1 && (rv == "A" || rv == "B")
 
 	switch {
 	case a.IsDefine:
