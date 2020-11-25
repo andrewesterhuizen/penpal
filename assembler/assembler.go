@@ -110,49 +110,49 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 		a.appendInstructions(instructions.MOV, addressingMode, dest, a.getInstructionArgs8(arg2, instruction))
 
 	case "SWAP":
-		a.instructions = append(a.instructions, instructions.SWAP)
+		a.appendInstruction(instructions.SWAP)
 
 	case "LOAD":
-		a.instructions = append(a.instructions, instructions.LOAD)
+		a.appendInstruction(instructions.LOAD)
 		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "POP":
-		a.instructions = append(a.instructions, instructions.POP)
+		a.appendInstruction(instructions.POP)
 
 	case "PUSH":
 		if len(t.Args) == 1 {
-			a.instructions = append(a.instructions, instructions.PUSH)
+			a.appendInstruction(instructions.PUSH)
 			arg := t.Args[0]
 
 			if arg.IsRegister {
-				a.instructions = append(a.instructions, instructions.Register)
-				a.instructions = append(a.instructions, instructions.RegistersByName[arg.Value])
+				a.appendInstruction(instructions.Register)
+				a.appendInstruction(instructions.RegistersByName[arg.Value])
 			} else if arg.IsFPOffsetAddress {
-				a.instructions = append(a.instructions, instructions.FramePointerRelativeAddress)
-				a.instructions = append(a.instructions, arg.AsUint8())
+				a.appendInstruction(instructions.FramePointerRelativeAddress)
+				a.appendInstruction(arg.AsUint8())
 			} else {
-				a.instructions = append(a.instructions, instructions.Value)
-				a.instructions = append(a.instructions, arg.AsUint8())
+				a.appendInstruction(instructions.Value)
+				a.appendInstruction(arg.AsUint8())
 			}
 
 		} else {
-			a.instructions = append(a.instructions, instructions.PUSH)
-			a.instructions = append(a.instructions, instructions.Register)
-			a.instructions = append(a.instructions, instructions.RegisterA)
+			a.appendInstruction(instructions.PUSH)
+			a.appendInstruction(instructions.Register)
+			a.appendInstruction(instructions.RegisterA)
 		}
 
 	case "STORE":
-		a.instructions = append(a.instructions, instructions.STORE)
+		a.appendInstruction(instructions.STORE)
 
 		if len(t.Args) == 2 {
 			arg0 := t.Args[0]
 			if arg0.IsFPOffsetAddress {
-				a.instructions = append(a.instructions, instructions.FramePointerRelativeAddress)
-				a.instructions = append(a.instructions, t.Args[0].AsUint8())
+				a.appendInstruction(instructions.FramePointerRelativeAddress)
+				a.appendInstruction(t.Args[0].AsUint8())
 			} else if arg0.IsRegister {
-				a.instructions = append(a.instructions, instructions.Register)
+				a.appendInstruction(instructions.Register)
 				register := instructions.RegistersByName[t.Args[0].Value]
-				a.instructions = append(a.instructions, register)
+				a.appendInstruction(register)
 
 			} else {
 				log.Fatalf("STORE: encountered unknown operand type %v", arg0)
@@ -160,62 +160,62 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 
 			a.addInstructionArgs16(t.Args[1], instruction)
 		} else {
-			a.instructions = append(a.instructions, instructions.Register)
-			a.instructions = append(a.instructions, instructions.RegisterA)
+			a.appendInstruction(instructions.Register)
+			a.appendInstruction(instructions.RegisterA)
 			a.addInstructionArgs16(t.Args[0], instruction)
 		}
 
 	case "ADD":
-		a.instructions = append(a.instructions, instructions.ADD)
+		a.appendInstruction(instructions.ADD)
 
 	case "SUB":
-		a.instructions = append(a.instructions, instructions.SUB)
+		a.appendInstruction(instructions.SUB)
 
 	case "MUL":
-		a.instructions = append(a.instructions, instructions.MUL)
+		a.appendInstruction(instructions.MUL)
 
 	case "DIV":
-		a.instructions = append(a.instructions, instructions.DIV)
+		a.appendInstruction(instructions.DIV)
 
 	case "SHL":
-		a.instructions = append(a.instructions, instructions.SHL)
+		a.appendInstruction(instructions.SHL)
 
 	case "SHR":
-		a.instructions = append(a.instructions, instructions.SHR)
+		a.appendInstruction(instructions.SHR)
 
 	case "AND":
-		a.instructions = append(a.instructions, instructions.AND)
+		a.appendInstruction(instructions.AND)
 
 	case "OR":
-		a.instructions = append(a.instructions, instructions.OR)
+		a.appendInstruction(instructions.OR)
 
 	case "HALT":
-		a.instructions = append(a.instructions, instructions.HALT)
+		a.appendInstruction(instructions.HALT)
 
 	case "SEND":
-		a.instructions = append(a.instructions, instructions.SEND)
+		a.appendInstruction(instructions.SEND)
 
 	case "RAND":
-		a.instructions = append(a.instructions, instructions.RAND)
+		a.appendInstruction(instructions.RAND)
 
 	case "JUMP":
-		a.instructions = append(a.instructions, instructions.JUMP)
+		a.appendInstruction(instructions.JUMP)
 		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "JUMPZ":
-		a.instructions = append(a.instructions, instructions.JUMPZ)
+		a.appendInstruction(instructions.JUMPZ)
 		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "JUMPNZ":
-		a.instructions = append(a.instructions, instructions.JUMPNZ)
+		a.appendInstruction(instructions.JUMPNZ)
 		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "CALL":
-		a.instructions = append(a.instructions, instructions.CALL)
+		a.appendInstruction(instructions.CALL)
 		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "RET":
-		a.instructions = append(a.instructions, instructions.RET)
+		a.appendInstruction(instructions.RET)
 
 	default:
 		log.Fatalf("encountered unknown instruction %s", instruction)
@@ -227,16 +227,16 @@ func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) {
 	if arg.IsDefine {
 		value := a.getDefine(arg.Value)
 		n := parseInt(value, 16, instruction)
-		a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-		a.instructions = append(a.instructions, uint8(n&0xff))
+		a.appendInstruction(uint8((n & 0xff00) >> 8))
+		a.appendInstruction(uint8(n & 0xff))
 	} else if arg.IsLabel {
 		value := a.getLabel(arg.Value)
-		a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-		a.instructions = append(a.instructions, uint8((value & 0xff)))
+		a.appendInstruction(uint8((value & 0xff00) >> 8))
+		a.appendInstruction(uint8((value & 0xff)))
 	} else {
 		n := arg.AsUint()
-		a.instructions = append(a.instructions, uint8((n&0xff00)>>8))
-		a.instructions = append(a.instructions, uint8(n&0xff))
+		a.appendInstruction(uint8((n & 0xff00) >> 8))
+		a.appendInstruction(uint8(n & 0xff))
 	}
 }
 
@@ -255,7 +255,7 @@ func (a *Assembler) getInstructionArgs8(arg lexer.Arg, instruction string) uint8
 }
 
 func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) {
-	a.instructions = append(a.instructions, a.getInstructionArgs8(arg, instruction))
+	a.appendInstruction(a.getInstructionArgs8(arg, instruction))
 }
 
 func (a *Assembler) getLabels(tokens []lexer.Token) {
