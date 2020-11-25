@@ -90,9 +90,8 @@ func (vm *VM) execute(instruction uint8) {
 		vm.ip++
 
 	case instructions.MOV:
-		flags := vm.fetch()
-
-		mode, register := instructions.DecodeFlags(flags)
+		mode := vm.fetch()
+		register := vm.fetch()
 
 		var dest *uint8
 

@@ -82,7 +82,7 @@ var InstructionByName = map[string]uint8{
 }
 
 var Width = map[uint8]int{
-	MOV:    3,
+	MOV:    4,
 	SWAP:   1,
 	HALT:   1,
 	LOAD:   3,
@@ -106,12 +106,6 @@ var Width = map[uint8]int{
 	SEND:   1,
 }
 
-func EncodeFlags(register uint8, addressingMode uint8) uint8 {
-	return (register << 4) | addressingMode
-}
-
-func DecodeFlags(flags uint8) (addressingMode uint8, register uint8) {
-	register = (flags & 0xf0) >> 4
-	addressingMode = (flags & 0xf)
-	return register, addressingMode
+func MovEncode(addressingMode byte, register byte, value byte) []byte {
+	return []byte{MOV, addressingMode, register, value}
 }

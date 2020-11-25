@@ -76,14 +76,17 @@ func (a *Assembler) appendInstruction(b uint8) {
 	a.instructions = append(a.instructions, b)
 }
 
+func (a *Assembler) appendInstructions(bytes []uint8) {
+	for _, b := range bytes {
+		a.instructions = append(a.instructions, b)
+	}
+}
+
 func (a *Assembler) addInstruction(t lexer.Token) {
 	instruction := t.Value
 
 	switch instruction {
 	case "MOV":
-
-		a.instructions = append(a.instructions, instructions.MOV)
-
 		register := t.Args[0]
 		var dest uint8
 
@@ -104,8 +107,7 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 			addressingMode = instructions.AddressingModeFPRelative
 		}
 
-		a.instructions = append(a.instructions, instructions.EncodeFlags(addressingMode, dest))
-		a.addInstructionArgs8(arg2, instruction)
+		a.appendInstructions(instructions.MovEncode(addressingMode, dest, a.getInstructionArgs8(arg2, instruction)))
 
 	case "SWAP":
 		a.instructions = append(a.instructions, instructions.SWAP)
@@ -199,19 +201,22 @@ func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) {
 	}
 }
 
-func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) {
+func (a *Assembler) getInstructionArgs8(arg lexer.Arg, instruction string) uint8 {
 	if arg.IsFPOffsetAddress {
-		a.instructions = append(a.instructions, arg.AsUint8())
+		return arg.AsUint8()
 	} else if arg.IsDefine {
 		value := a.getDefine(arg.Value)
-		a.instructions = append(a.instructions, uint8(parseInt(value, 16, instruction)))
+		return uint8(parseInt(value, 16, instruction))
 	} else if arg.IsLabel {
 		value := a.getLabel(arg.Value)
-		// a.instructions = append(a.instructions, uint8((value&0xff00)>>8))
-		a.instructions = append(a.instructions, uint8((value & 0xff)))
+		return uint8((value & 0xff))
 	} else {
-		a.instructions = append(a.instructions, arg.AsUint8())
+		return arg.AsUint8()
 	}
+}
+
+func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) {
+	a.instructions = append(a.instructions, a.getInstructionArgs8(arg, instruction))
 }
 
 func (a *Assembler) getLabels(tokens []lexer.Token) {
