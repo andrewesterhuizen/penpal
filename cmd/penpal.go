@@ -34,6 +34,32 @@ func main() {
 			}
 
 			return
+
+		case "compile":
+			if len(args) < 2 {
+				log.Fatal("no input file")
+			}
+
+			file := args[1]
+
+			f, err := ioutil.ReadFile(file)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			a := assembler.New(assembler.Config{})
+
+			instructions, err := a.GetInstructions(string(f))
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for _, i := range instructions {
+				fmt.Printf("%c", i)
+			}
+
+			return
+
 		default:
 			// TODO: handle binary files too
 
