@@ -313,10 +313,17 @@ func (a *Assembler) addHeader() error {
 func (a *Assembler) GetInstructions(source string) ([]uint8, error) {
 	a.source = strings.TrimSpace(source)
 
+	p := NewPreprocessor(FileSystemFileGetter)
+
+	source, err := p.Process(source)
+	if err != nil {
+		return nil, err
+	}
+
 	l := lexer.New()
 	tokens, err := l.GetTokens(source)
 	if err != nil {
-		log.Fatalf("assembler failed: %v\n", err)
+		return nil, err
 	}
 
 	a.getLabels(tokens)
