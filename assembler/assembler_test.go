@@ -8,9 +8,10 @@ import (
 )
 
 type TestCase struct {
-	input  string
-	output []uint8
-	files  map[string]string
+	input          string
+	output         []uint8
+	files          map[string]string
+	systemIncludes map[string]string
 }
 
 var instructionTestCases = []TestCase{
@@ -125,6 +126,51 @@ var instructionTestCases = []TestCase{
 			"testfile2.asm": "SHL\nSHR\n",
 		},
 	},
+	{
+		input: `
+			#include <test>
+
+			HALT`,
+		output:         []uint8{instructions.SUB, instructions.HALT},
+		systemIncludes: map[string]string{"test": `SUB`},
+	},
+	{
+		input: `
+			#include <test>
+
+			HALT`,
+		output: []uint8{instructions.SHL, instructions.SHR, instructions.ADD, instructions.HALT},
+		systemIncludes: map[string]string{
+			"test":  "#include <test2>\nADD\n",
+			"test2": "SHL\nSHR\n",
+		},
+	},
+	{
+		input: `
+			#include <test>
+
+			HALT`,
+		output: []uint8{instructions.SHL, instructions.SHR, instructions.ADD, instructions.HALT},
+		files: map[string]string{
+			"testfile.asm": "SHL\nSHR\n",
+		},
+		systemIncludes: map[string]string{
+			"test": "#include \"testfile.asm\"\nADD\n",
+		},
+	},
+	{
+		input: `
+				#include "testfile.asm"
+	
+				HALT`,
+		output: []uint8{instructions.MUL, instructions.SUB, instructions.HALT},
+		files: map[string]string{
+			"testfile.asm": "#include <test>\nSUB",
+		},
+		systemIncludes: map[string]string{
+			"test": "MUL\n",
+		},
+	},
 }
 
 func newMockFileGetterFunc(files map[string]string) FileGetterFunc {
@@ -146,8 +192,13 @@ func TestInstructions(t *testing.T) {
 			files = map[string]string{}
 		}
 
-		fileGetter := newMockFileGetterFunc(files)
-		a := New(Config{disableHeader: true, FileGetterFunc: fileGetter})
+		cfg := Config{
+			disableHeader:  true,
+			FileGetterFunc: newMockFileGetterFunc(files),
+			SystemIncludes: tc.systemIncludes,
+		}
+
+		a := New(cfg)
 
 		ins, err := a.GetProgram("", tc.input)
 		if err != nil {
@@ -185,5 +236,16 @@ func TestAssembler_EntryPointSkipsHeader(t *testing.T) {
 	if (ins[HeaderSize] != instructions.SWAP) || (ins[HeaderSize+1] != instructions.OR) || (ins[HeaderSize+2] != instructions.ADD) {
 		t.Errorf("expected assembler to return error for source with no entry point")
 	}
+}
 
+func TestAssembler_MissingSystemInclude_ReturnsError(t *testing.T) {
+	a := New(Config{disableHeader: true})
+
+	source := `#include <missing>`
+
+	_, err := a.GetProgram("", source)
+
+	if err == nil {
+		t.Errorf("expected assembler to return error for missing system include")
+	}
 }

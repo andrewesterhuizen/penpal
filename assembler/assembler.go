@@ -26,6 +26,7 @@ func FileSystemFileGetterFunc(path string) (string, error) {
 type Config struct {
 	disableHeader  bool
 	FileGetterFunc FileGetterFunc
+	SystemIncludes map[string]string
 }
 
 type Assembler struct {
@@ -37,7 +38,10 @@ type Assembler struct {
 
 	currentLableAddress uint16
 
-	sourceTokens map[string][]lexer.Token
+	systemIncludeSources map[string]string
+
+	includeTokens       map[string][]lexer.Token
+	systemIncludeTokens map[string][]lexer.Token
 }
 
 func New(config Config) Assembler {
@@ -49,9 +53,16 @@ func New(config Config) Assembler {
 		a.getFile = FileSystemFileGetterFunc
 	}
 
+	if config.SystemIncludes != nil {
+		a.systemIncludeSources = config.SystemIncludes
+	} else {
+		a.systemIncludeSources = make(map[string]string)
+	}
+
 	a.defines = make(map[string]string)
 	a.labels = make(map[string]uint16)
-	a.sourceTokens = make(map[string][]lexer.Token)
+	a.includeTokens = make(map[string][]lexer.Token)
+	a.systemIncludeTokens = make(map[string][]lexer.Token)
 
 	a.currentLableAddress = 0
 
@@ -92,14 +103,15 @@ func (a *Assembler) processTokens(tokens []lexer.Token) error {
 }
 
 func (a *Assembler) processFileIncludeToken(t lexer.Token) error {
-	filename := t.Value
-	tokens := a.sourceTokens[filename]
+	name := t.Value
+	tokens := a.includeTokens[name]
 	return a.processTokens(tokens)
 }
 
 func (a *Assembler) processSystemIncludeToken(t lexer.Token) error {
-	// TODO: process lexer.TokenSystemInclude here
-	return nil
+	name := t.Value
+	tokens := a.systemIncludeTokens[name]
+	return a.processTokens(tokens)
 }
 
 func (a *Assembler) processDefineToken(t lexer.Token) error {
@@ -410,27 +422,65 @@ func (a *Assembler) getHeaderBytes() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func (a *Assembler) getFileInclude(name string) error {
+	source, err := a.getFile(name)
+	if err != nil {
+		return err
+	}
+
+	l := lexer.New()
+	tokens, err := l.GetTokens(name, source)
+	if err != nil {
+		return err
+	}
+
+	a.includeTokens[name] = tokens
+
+	err = a.getIncludes(name, tokens)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *Assembler) getSystemInclude(name string) error {
+	source, exists := a.systemIncludeSources[name]
+
+	if !exists {
+		return fmt.Errorf("no source available for system include <%s>", name)
+	}
+
+	l := lexer.New()
+	tokens, err := l.GetTokens(name, source)
+	if err != nil {
+		return err
+	}
+
+	a.systemIncludeTokens[name] = tokens
+
+	err = a.getIncludes(name, tokens)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (a *Assembler) getIncludes(filename string, tokens []lexer.Token) error {
 	for _, t := range tokens {
-		if t.Type == lexer.TokenFileInclude {
-
-			filename := t.Value
-			file, err := a.getFile(filename)
+		switch t.Type {
+		case lexer.TokenFileInclude:
+			err := a.getFileInclude(t.Value)
 			if err != nil {
 				return err
 			}
 
-			l := lexer.New()
-			tokens, err := l.GetTokens(filename, file)
+		case lexer.TokenSystemInclude:
+			err := a.getSystemInclude(t.Value)
 			if err != nil {
 				return err
 			}
-
-			a.sourceTokens[filename] = tokens
-
-			a.getIncludes(filename, tokens)
-		} else if t.Type == lexer.TokenSystemInclude {
-			// TODO: handle lexer.TokenSystemInclude here
 		}
 	}
 
@@ -442,11 +492,13 @@ func (a *Assembler) getLabels(tokens []lexer.Token) error {
 		switch t.Type {
 		case lexer.TokenFileInclude:
 			filename := t.Value
-			tokens := a.sourceTokens[filename]
+			tokens := a.includeTokens[filename]
 			a.getLabels(tokens)
 
 		case lexer.TokenSystemInclude:
-		// TODO: handle lexer.TokenSystemInclude here
+			name := t.Value
+			tokens := a.systemIncludeTokens[name]
+			a.getLabels(tokens)
 
 		case lexer.TokenLabel:
 			if t.Type == lexer.TokenLabel {
@@ -476,10 +528,16 @@ func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) 
 	}
 
 	// recursively gets tokens for each included file
-	a.getIncludes(filename, tokens)
+	err = a.getIncludes(filename, tokens)
+	if err != nil {
+		return nil, err
+	}
 
 	// recursively gets labels from all included files
-	a.getLabels(tokens)
+	err = a.getLabels(tokens)
+	if err != nil {
+		return nil, err
+	}
 
 	out := bytes.Buffer{}
 

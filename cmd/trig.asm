@@ -1,4 +1,4 @@
-#include "send_midi.asm"
+#include <midi>
 
 trig:
     // note on

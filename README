@@ -6,3 +6,4 @@ LOAD/STORE addressing modes
 bin header: interupt locations
 receive messages interrupts
 examples programs
+assembler: handle circular include references

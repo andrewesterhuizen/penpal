@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/andrewesterhuizen/penpal/penpal"
+
 	"github.com/andrewesterhuizen/penpal/assembler"
 	"github.com/andrewesterhuizen/penpal/midi"
 	"github.com/andrewesterhuizen/penpal/vm"
@@ -34,7 +36,7 @@ func compileFromFile(filename string) {
 		log.Fatal(err)
 	}
 
-	a := assembler.New(assembler.Config{})
+	a := assembler.New(assembler.Config{SystemIncludes: penpal.SystemIncludes})
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
@@ -65,7 +67,7 @@ func loadProgramFromFile(filename string) []byte {
 		return f
 	}
 
-	a := assembler.New(assembler.Config{})
+	a := assembler.New(assembler.Config{SystemIncludes: penpal.SystemIncludes})
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
