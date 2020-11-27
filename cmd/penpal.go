@@ -36,7 +36,7 @@ func compileFromFile(filename string) {
 
 	a := assembler.New(assembler.Config{})
 
-	program, err := a.GetInstructions(string(f))
+	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
 		log.Fatalf("assembler failed: %v", err)
 	}
@@ -44,8 +44,8 @@ func compileFromFile(filename string) {
 	binary.Write(os.Stdout, binary.LittleEndian, program)
 }
 
-func loadProgramFromFile(fileName string) []byte {
-	f, err := ioutil.ReadFile(fileName)
+func loadProgramFromFile(filename string) []byte {
+	f, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func loadProgramFromFile(fileName string) []byte {
 
 	a := assembler.New(assembler.Config{})
 
-	program, err := a.GetInstructions(string(f))
+	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
 		log.Fatalf("assembler failed: %v", err)
 	}

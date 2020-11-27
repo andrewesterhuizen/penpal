@@ -13,6 +13,8 @@ var testCases = []TestCase{
 	TestCase{input: "MOVA 0xab", output: []Token{newInstructionToken("MOVA", newArgs("0xab"))}},
 	TestCase{input: "JUMP 0xabcd", output: []Token{newInstructionToken("JUMP", newArgs("0xabcd"))}},
 	TestCase{input: "$test = 0xbc", output: []Token{newDefineToken("test", newArgs("0xbc"))}},
+	TestCase{input: "#include \"test.asm\"", output: []Token{newFileIncludeToken("test.asm")}},
+	TestCase{input: "#include <test>", output: []Token{newSystemIncludeToken("test")}},
 	TestCase{input: "test:", output: []Token{newLabelToken("test")}},
 	TestCase{
 		input: `
@@ -51,7 +53,7 @@ func TestLexer(t *testing.T) {
 	for _, tc := range testCases {
 		l := New()
 
-		tokens, err := l.GetTokens(tc.input)
+		tokens, err := l.GetTokens("", tc.input)
 		if err != nil {
 			t.Errorf("lexer returned error: %w", err)
 		}

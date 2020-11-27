@@ -1,10 +1,10 @@
 package assembler
 
 import (
+	"bytes"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"strconv"
-	"strings"
 
 	"github.com/andrewesterhuizen/penpal/instructions"
 	"github.com/andrewesterhuizen/penpal/lexer"
@@ -12,64 +12,130 @@ import (
 
 const HeaderSize = 10
 
+type FileGetterFunc func(path string) (string, error)
+
+func FileSystemFileGetterFunc(path string) (string, error) {
+	f, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	return string(f), nil
+}
+
 type Config struct {
-	disableHeader bool
+	disableHeader  bool
+	FileGetterFunc FileGetterFunc
 }
 
 type Assembler struct {
 	config       Config
-	index        int
-	source       string
 	instructions []uint8
 	defines      map[string]string
 	labels       map[string]uint16
+	getFile      FileGetterFunc
+
+	currentLableAddress uint16
+
+	sourceTokens map[string][]lexer.Token
 }
 
 func New(config Config) Assembler {
 	a := Assembler{config: config}
+
+	if config.FileGetterFunc != nil {
+		a.getFile = config.FileGetterFunc
+	} else {
+		a.getFile = FileSystemFileGetterFunc
+	}
+
 	a.defines = make(map[string]string)
 	a.labels = make(map[string]uint16)
+	a.sourceTokens = make(map[string][]lexer.Token)
+
+	a.currentLableAddress = 0
+
+	if !config.disableHeader {
+		a.currentLableAddress = HeaderSize
+	}
+
 	return a
 }
 
-func parseInt(s string, base int, instruction string) uint64 {
-	n, err := strconv.ParseUint(s, 0, base)
+func (a *Assembler) getDefine(define string) (string, error) {
+	value, exists := a.defines[define]
+	if !exists {
+		return "", fmt.Errorf("no definition found for %s", define)
+	}
+
+	return value, nil
+}
+
+func (a *Assembler) getLabel(label string) (uint16, error) {
+	value, exists := a.labels[label]
+	if !exists {
+		return 0, fmt.Errorf("no label definition found for %s", label)
+	}
+
+	return value, nil
+}
+
+func (a *Assembler) processTokens(tokens []lexer.Token) error {
+	for _, t := range tokens {
+		err := a.processToken(t)
+		if err != nil {
+			return fmt.Errorf("%s:%v: %w", t.FileName, t.LineNumber, err)
+		}
+	}
+
+	return nil
+}
+
+func (a *Assembler) processFileIncludeToken(t lexer.Token) error {
+	filename := t.Value
+	tokens := a.sourceTokens[filename]
+	return a.processTokens(tokens)
+}
+
+func (a *Assembler) processSystemIncludeToken(t lexer.Token) error {
+	// TODO: process lexer.TokenSystemInclude here
+	return nil
+}
+
+func (a *Assembler) processDefineToken(t lexer.Token) error {
+	a.defines[t.Value] = t.Args[0].Value
+	return nil
+}
+
+func (a *Assembler) processInstructionToken(t lexer.Token) error {
+	i, exists := instructions.InstructionByName[t.Value]
+	if !exists {
+		return fmt.Errorf("encountered unknown instruction when getting labels: %s", t.Value)
+	}
+
+	a.currentLableAddress += uint16(instructions.Width[i])
+
+	err := a.addInstruction(t)
 	if err != nil {
-		log.Fatalf("failed at instruction %s: unable to parse int from value %s", instruction, s)
+		return err
 	}
 
-	return n
+	return nil
 }
 
-func (a *Assembler) ParseToken(t lexer.Token) {
+func (a *Assembler) processToken(t lexer.Token) error {
 	switch t.Type {
+	case lexer.TokenFileInclude:
+		return a.processFileIncludeToken(t)
+	case lexer.TokenSystemInclude:
+		return a.processSystemIncludeToken(t)
 	case lexer.TokenDefine:
-		a.defines[t.Value] = t.Args[0].Value
-	case lexer.TokenLabel:
+		return a.processDefineToken(t)
 	case lexer.TokenInstruction:
-		a.addInstruction(t)
-
-	default:
-		log.Fatalf("encountered unexpected token type %s\n", t.Type)
-	}
-}
-
-func (a *Assembler) getDefine(d string) string {
-	v, exists := a.defines[d]
-	if !exists {
-		log.Fatalf("no definition found for %s", d)
+		return a.processInstructionToken(t)
 	}
 
-	return v
-}
-
-func (a *Assembler) getLabel(d string) uint16 {
-	v, exists := a.labels[d]
-	if !exists {
-		log.Fatalf("no label definition found for %s", d)
-	}
-
-	return v
+	return nil
 }
 
 func (a *Assembler) appendInstruction(b uint8) {
@@ -82,7 +148,7 @@ func (a *Assembler) appendInstructions(bytes ...uint8) {
 	}
 }
 
-func (a *Assembler) addInstruction(t lexer.Token) {
+func (a *Assembler) addInstruction(t lexer.Token) error {
 	instruction := t.Value
 
 	switch instruction {
@@ -96,7 +162,7 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 		case "B":
 			dest = instructions.RegisterB
 		default:
-			log.Fatalf("encountered unknown destination for MOV instruction: %s", register.Value)
+			return fmt.Errorf("encountered unknown destination for MOV instruction: %s", register.Value)
 		}
 
 		arg2 := t.Args[1]
@@ -107,14 +173,22 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 			addressingMode = instructions.AddressingModeFPRelative
 		}
 
-		a.appendInstructions(instructions.MOV, addressingMode, dest, a.getInstructionArgs8(arg2, instruction))
+		v, err := a.getInstructionArgs8(arg2, instruction)
+		if err != nil {
+			return err
+		}
+
+		a.appendInstructions(instructions.MOV, addressingMode, dest, v)
 
 	case "SWAP":
 		a.appendInstruction(instructions.SWAP)
 
 	case "LOAD":
 		a.appendInstruction(instructions.LOAD)
-		a.addInstructionArgs16(t.Args[0], instruction)
+		err := a.addInstructionArgs16(t.Args[0], instruction)
+		if err != nil {
+			return err
+		}
 
 	case "POP":
 		a.appendInstruction(instructions.POP)
@@ -155,7 +229,7 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 				a.appendInstruction(register)
 
 			} else {
-				log.Fatalf("STORE: encountered unknown operand type %v", arg0)
+				return fmt.Errorf("STORE: encountered unknown operand type %v", arg0)
 			}
 
 			a.addInstructionArgs16(t.Args[1], instruction)
@@ -200,6 +274,9 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 
 	case "JUMP":
 		a.appendInstruction(instructions.JUMP)
+		if len(t.Args) < 1 {
+			return fmt.Errorf("expected 1 operand for instruction")
+		}
 		a.addInstructionArgs16(t.Args[0], instruction)
 
 	case "JUMPZ":
@@ -218,19 +295,31 @@ func (a *Assembler) addInstruction(t lexer.Token) {
 		a.appendInstruction(instructions.RET)
 
 	default:
-		log.Fatalf("encountered unknown instruction %s", instruction)
+		return fmt.Errorf("encountered unknown instruction %s", instruction)
 	}
 
+	return nil
 }
 
-func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) {
+func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) error {
 	if arg.IsDefine {
-		value := a.getDefine(arg.Value)
-		n := parseInt(value, 16, instruction)
+		value, err := a.getDefine(arg.Value)
+		if err != nil {
+			return err
+		}
+
+		n, err := strconv.ParseUint(value, 0, 16)
+		if err != nil {
+			return err
+		}
+
 		a.appendInstruction(uint8((n & 0xff00) >> 8))
 		a.appendInstruction(uint8(n & 0xff))
 	} else if arg.IsLabel {
-		value := a.getLabel(arg.Value)
+		value, err := a.getLabel(arg.Value)
+		if err != nil {
+			return err
+		}
 		a.appendInstruction(uint8((value & 0xff00) >> 8))
 		a.appendInstruction(uint8((value & 0xff)))
 	} else {
@@ -238,111 +327,157 @@ func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) {
 		a.appendInstruction(uint8((n & 0xff00) >> 8))
 		a.appendInstruction(uint8(n & 0xff))
 	}
+
+	return nil
 }
 
-func (a *Assembler) getInstructionArgs8(arg lexer.Arg, instruction string) uint8 {
+func (a *Assembler) getInstructionArgs8(arg lexer.Arg, instruction string) (uint8, error) {
 	if arg.IsFPOffsetAddress {
-		return arg.AsUint8()
+		return arg.AsUint8(), nil
 	} else if arg.IsDefine {
-		value := a.getDefine(arg.Value)
-		return uint8(parseInt(value, 16, instruction))
+		value, err := a.getDefine(arg.Value)
+		if err != nil {
+			return 0, err
+		}
+
+		n, err := strconv.ParseUint(value, 0, 16)
+		if err != nil {
+			return 0, err
+		}
+
+		return uint8(n), nil
 	} else if arg.IsLabel {
-		value := a.getLabel(arg.Value)
-		return uint8((value & 0xff))
+		value, err := a.getLabel(arg.Value)
+		if err != nil {
+			return 0, err
+		}
+		return uint8((value & 0xff)), nil
 	} else {
-		return arg.AsUint8()
+		return arg.AsUint8(), nil
 	}
+
 }
 
-func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) {
-	a.appendInstruction(a.getInstructionArgs8(arg, instruction))
+func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) error {
+	v, err := a.getInstructionArgs8(arg, instruction)
+	if err != nil {
+		return err
+	}
+
+	a.appendInstruction(v)
+
+	return nil
 }
 
-func (a *Assembler) getLabels(tokens []lexer.Token) {
-	instructionNumber := 0
+func (a *Assembler) getHeaderBytes() ([]byte, error) {
+	buf := bytes.Buffer{}
 
+	entryPointAddress, exists := a.labels["__start"]
+	// check for entry point
+	if !exists {
+		return nil, fmt.Errorf("source has no entry point")
+	}
+
+	for _, b := range []byte("PENPAL") {
+		buf.WriteByte(b)
+	}
+
+	// version
+	buf.WriteByte(0)
+	buf.WriteByte(1)
+
+	// entry point
+	buf.WriteByte(byte((entryPointAddress & 0xff00) >> 8))
+	buf.WriteByte(byte(entryPointAddress & 0xff))
+
+	return buf.Bytes(), nil
+}
+
+func (a *Assembler) getIncludes(filename string, tokens []lexer.Token) error {
+	for _, t := range tokens {
+		if t.Type == lexer.TokenFileInclude {
+
+			filename := t.Value
+			file, err := a.getFile(filename)
+			if err != nil {
+				return err
+			}
+
+			l := lexer.New()
+			tokens, err := l.GetTokens(filename, file)
+			if err != nil {
+				return err
+			}
+
+			a.sourceTokens[filename] = tokens
+
+			a.getIncludes(filename, tokens)
+		} else if t.Type == lexer.TokenSystemInclude {
+			// TODO: handle lexer.TokenSystemInclude here
+		}
+	}
+
+	return nil
+}
+
+func (a *Assembler) getLabels(tokens []lexer.Token) error {
 	for _, t := range tokens {
 		switch t.Type {
-		case lexer.TokenDefine:
-			// skip
+		case lexer.TokenFileInclude:
+			filename := t.Value
+			tokens := a.sourceTokens[filename]
+			a.getLabels(tokens)
+
+		case lexer.TokenSystemInclude:
+		// TODO: handle lexer.TokenSystemInclude here
+
 		case lexer.TokenLabel:
-			// add label
 			if t.Type == lexer.TokenLabel {
-				a.labels[t.Value] = uint16(instructionNumber)
+				a.labels[t.Value] = uint16(a.currentLableAddress)
 			}
 
 		case lexer.TokenInstruction:
 			i, exists := instructions.InstructionByName[t.Value]
 			if !exists {
-				log.Fatalf("encountered unknown instruction when getting labels: %s", t.Value)
+				return fmt.Errorf("encountered unknown instruction %s", t.Value)
 			}
 
-			instructionNumber += instructions.Width[i]
-
-		default:
-			log.Fatalf("encountered unexpected token type when getting labels: %s\n", t.Type)
+			a.currentLableAddress += uint16(instructions.Width[i])
 		}
-
 	}
-}
-
-func (a *Assembler) addHeader() error {
-	entryPointAddress, exists := a.labels["__start"]
-
-	// check for entry point
-	if !exists {
-		return fmt.Errorf("source has no entry point")
-	}
-
-	for _, b := range []byte("PENPAL") {
-		a.appendInstruction(b)
-	}
-
-	// version
-	a.appendInstruction(0)
-	a.appendInstruction(1)
-
-	// entry point
-	entryPointAddress += HeaderSize
-	a.appendInstruction(byte((entryPointAddress & 0xff00) >> 8))
-	a.appendInstruction(byte(entryPointAddress & 0xff))
 
 	return nil
 }
 
-func (a *Assembler) GetInstructions(source string) ([]uint8, error) {
-	a.source = strings.TrimSpace(source)
-
-	p := NewPreprocessor(FileSystemFileGetter)
-
-	source, err := p.Process(source)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) {
 	l := lexer.New()
-	tokens, err := l.GetTokens(source)
+
+	// get tokens for entry point file
+	tokens, err := l.GetTokens(filename, source)
 	if err != nil {
 		return nil, err
 	}
 
+	// recursively gets tokens for each included file
+	a.getIncludes(filename, tokens)
+
+	// recursively gets labels from all included files
 	a.getLabels(tokens)
 
+	out := bytes.Buffer{}
+
 	if !a.config.disableHeader {
-		err = a.addHeader()
+		h, err := a.getHeaderBytes()
 		if err != nil {
 			return nil, err
 		}
 
-		// update labels to account for header size
-		for l := range a.labels {
-			a.labels[l] += uint16(HeaderSize)
-		}
+		out.Write(h)
 	}
 
-	for _, t := range tokens {
-		a.ParseToken(t)
-	}
+	a.processTokens(tokens)
 
-	return a.instructions, nil
+	out.Write(a.instructions)
+
+	return out.Bytes(), nil
 }

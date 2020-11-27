@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -50,13 +51,15 @@ func getDefineArgs(parts []string) ([]Arg, error) {
 	return []Arg{newArg(parts[1])}, nil
 }
 
-func (l *Lexer) parseLine(line string) error {
+var includeRegex = regexp.MustCompile(`#include\s+(<|")(\w+.\w+)["|>]\s*`)
+
+func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
 	line = strings.TrimSpace(line)
 	if line == "" {
 		return nil
 	}
 
-	t := Token{}
+	t := Token{FileName: filename, LineNumber: lineNumber}
 
 	lineSplit := strings.Split(line, " ")
 
@@ -77,6 +80,21 @@ func (l *Lexer) parseLine(line string) error {
 		}
 
 		t.Args = args
+	case v[0] == '#':
+		s := includeRegex.FindStringSubmatch(line)
+
+		startChar := s[1]
+		filename := s[2]
+
+		if startChar == "<" {
+			t.Value = filename
+			t.Type = TokenSystemInclude
+		} else if startChar == "\"" {
+			t.Value = filename
+			t.Type = TokenFileInclude
+		} else {
+			return fmt.Errorf("expected next char to be \" or < and got %v", startChar)
+		}
 
 	case v[len(v)-1] == ':': // label
 		t.Type = TokenLabel
@@ -93,12 +111,12 @@ func (l *Lexer) parseLine(line string) error {
 	return nil
 }
 
-func (l *Lexer) GetTokens(source string) ([]Token, error) {
+func (l *Lexer) GetTokens(filename string, source string) ([]Token, error) {
 	l.source = strings.TrimSpace(source)
 	lines := strings.Split(l.source, "\n")
 
 	for i, line := range lines {
-		err := l.parseLine(line)
+		err := l.parseLine(filename, i, line)
 		if err != nil {
 			return nil, fmt.Errorf("lexing failed at line %d, (%s): %w", i, line, err)
 		}

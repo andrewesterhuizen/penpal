@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/andrewesterhuizen/penpal/instructions"
@@ -9,6 +10,7 @@ import (
 type TestCase struct {
 	input  string
 	output []uint8
+	files  map[string]string
 }
 
 var instructionTestCases = []TestCase{
@@ -83,7 +85,7 @@ var instructionTestCases = []TestCase{
 		output: []uint8{instructions.JUMP, 0x0, 0x3, instructions.SWAP},
 	},
 	{input: `
-	CALL label 
+	CALL label
 	HALT
 
 	label:
@@ -91,13 +93,50 @@ var instructionTestCases = []TestCase{
 	`,
 		output: []uint8{instructions.CALL, 0x0, 0x4, instructions.HALT, instructions.RET},
 	},
+	{
+		input: `
+			#include "testfile.asm"
+
+			HALT`,
+		output: []uint8{instructions.SWAP, instructions.HALT},
+		files:  map[string]string{"testfile.asm": `SWAP`},
+	},
+	{
+		input: `
+			#include "testfile.asm"
+
+			HALT`,
+		output: []uint8{instructions.SHL, instructions.SHR, instructions.ADD, instructions.HALT},
+		files: map[string]string{
+			"testfile.asm":  "#include \"testfile2.asm\"\nADD\n",
+			"testfile2.asm": "SHL\nSHR\n",
+		},
+	},
+}
+
+func newMockFileGetterFunc(files map[string]string) FileGetterFunc {
+	return func(name string) (string, error) {
+		file, exists := files[name]
+		if !exists {
+			return "", fmt.Errorf("failed to get file %s", name)
+		}
+
+		return file, nil
+	}
 }
 
 func TestInstructions(t *testing.T) {
 	for _, tc := range instructionTestCases {
-		a := New(Config{disableHeader: true})
+		files := tc.files
 
-		ins, err := a.GetInstructions(tc.input)
+		if files == nil {
+			files = map[string]string{}
+		}
+
+		fileGetter := newMockFileGetterFunc(files)
+		a := New(Config{disableHeader: true, FileGetterFunc: fileGetter})
+
+		ins, err := a.GetProgram("", tc.input)
 		if err != nil {
 			t.Errorf("failed to get instructions due to error: %s, with input %s", err, tc.input)
 			return
@@ -118,7 +157,7 @@ func TestInstructions(t *testing.T) {
 
 func TestAssembler_NoEntryPoint_ReturnsError(t *testing.T) {
 	a := New(Config{})
-	_, err := a.GetInstructions("SWAP\n")
+	_, err := a.GetProgram("", "SWAP\n")
 
 	if err == nil {
 		t.Errorf("expected assembler to return error for source with no entry point")
@@ -128,7 +167,7 @@ func TestAssembler_NoEntryPoint_ReturnsError(t *testing.T) {
 // this test should fail if I forget to update the HeaderSize constant
 func TestAssembler_EntryPointSkipsHeader(t *testing.T) {
 	a := New(Config{})
-	ins, _ := a.GetInstructions("__start:\nSWAP\nOR\nADD\n")
+	ins, _ := a.GetProgram("", "__start:\nSWAP\nOR\nADD\n")
 
 	if (ins[HeaderSize] != instructions.SWAP) || (ins[HeaderSize+1] != instructions.OR) || (ins[HeaderSize+2] != instructions.ADD) {
 		t.Errorf("expected assembler to return error for source with no entry point")
