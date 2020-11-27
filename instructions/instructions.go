@@ -89,7 +89,7 @@ var Width = map[uint8]int{
 	MOV:    4,
 	SWAP:   1,
 	HALT:   1,
-	LOAD:   3,
+	LOAD:   5,
 	STORE:  5,
 	ADD:    1,
 	SUB:    1,

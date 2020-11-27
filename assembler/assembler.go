@@ -185,9 +185,26 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 
 	case "LOAD":
 		a.appendInstruction(instructions.LOAD)
-		err := a.addInstructionArgs16(t.Args[0], instruction)
-		if err != nil {
-			return err
+
+		if len(t.Args) == 2 {
+			arg0 := t.Args[0]
+			if arg0.IsFPOffsetAddress {
+				a.appendInstruction(instructions.FramePointerRelativeAddress)
+				a.appendInstruction(t.Args[0].AsUint8())
+			} else if arg0.IsRegister {
+				a.appendInstruction(instructions.Register)
+				register := instructions.RegistersByName[t.Args[0].Value]
+				a.appendInstruction(register)
+
+			} else {
+				return fmt.Errorf("LOAD: encountered unknown operand type %v", arg0)
+			}
+
+			a.addInstructionArgs16(t.Args[1], instruction)
+		} else {
+			a.appendInstruction(instructions.Register)
+			a.appendInstruction(instructions.RegisterA)
+			a.addInstructionArgs16(t.Args[0], instruction)
 		}
 
 	case "POP":

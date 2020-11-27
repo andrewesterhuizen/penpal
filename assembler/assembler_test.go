@@ -19,8 +19,20 @@ var instructionTestCases = []TestCase{
 	{input: "MOV A -1(fp)", output: []uint8{instructions.MOV, instructions.AddressingModeFPRelative, instructions.RegisterA, 0xff}},
 	{input: "MOV B 0xcd", output: []uint8{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterB, 0xcd}},
 	{input: "SWAP", output: []uint8{instructions.SWAP}},
-	{input: "LOAD 0xae", output: []uint8{instructions.LOAD, 0x00, 0xae}},
-	{input: "LOAD 0xaecd", output: []uint8{instructions.LOAD, 0xae, 0xcd}},
+
+	// LOAD dest src
+	{input: "LOAD 0xae", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "LOAD 0xaecd", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
+	{input: "LOAD A 0xae", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "LOAD A 0xaecd", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
+	{input: "LOAD B 0xae", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterB, 0x00, 0xae}},
+	{input: "LOAD B 0xaecd", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterB, 0xae, 0xcd}},
+	{input: "LOAD +1(fp) 0xae", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0x1, 0x00, 0xae}},
+	{input: "LOAD +1(fp) 0xaecd", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0x1, 0xae, 0xcd}},
+	{input: "LOAD -1(fp) 0xae", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0xff, 0x00, 0xae}},
+	{input: "LOAD -1(fp) 0xaecd", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0xff, 0xae, 0xcd}},
+
+	// STORE src dest
 	{input: "STORE 0xae", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
 	{input: "STORE 0xaecd", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
 	{input: "STORE A 0xae", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
@@ -29,6 +41,7 @@ var instructionTestCases = []TestCase{
 	{input: "STORE +1(fp) 0xaecd", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0x1, 0xae, 0xcd}},
 	{input: "STORE -1(fp) 0xae", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0xff, 0x00, 0xae}},
 	{input: "STORE -1(fp) 0xaecd", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0xff, 0xae, 0xcd}},
+
 	{input: "POP", output: []uint8{instructions.POP}},
 	{input: "PUSH", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterA}},
 	{input: "PUSH A", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterA}},

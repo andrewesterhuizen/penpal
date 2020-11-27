@@ -160,8 +160,29 @@ func (vm *VM) execute(instruction uint8) {
 		vm.ip++
 
 	case instructions.LOAD:
-		addr := vm.fetch16()
-		vm.a = vm.memory[addr]
+		mode := vm.fetch()
+		modeArg := vm.fetch()
+
+		srcAddr := vm.fetch16()
+
+		switch mode {
+		case instructions.FramePointerRelativeAddress:
+			addr := vm.getFramePointerRelativeAddress(int8(modeArg))
+			vm.memory[addr] = vm.memory[srcAddr]
+		case instructions.Register:
+			switch modeArg {
+			case instructions.RegisterA:
+				vm.a = vm.memory[srcAddr]
+			case instructions.RegisterB:
+				vm.b = vm.memory[srcAddr]
+			default:
+				log.Fatalf("LOAD: encountered unknown register source 0x%02x", mode)
+			}
+
+		default:
+			log.Fatalf("LOAD: encountered unknown addressing mode 0x%02x", mode)
+		}
+
 		vm.ip++
 
 	case instructions.ADD:
