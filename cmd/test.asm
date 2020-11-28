@@ -1,4 +1,4 @@
-#include "trig.asm"
+#include <midi>
 
 __start:
     PUSH 0x30
