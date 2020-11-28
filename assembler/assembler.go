@@ -73,22 +73,14 @@ func New(config Config) Assembler {
 	return a
 }
 
-func (a *Assembler) getDefine(define string) (string, error) {
+func (a *Assembler) getDefine(define string) (string, bool) {
 	value, exists := a.defines[define]
-	if !exists {
-		return "", fmt.Errorf("no definition found for %s", define)
-	}
-
-	return value, nil
+	return value, exists
 }
 
-func (a *Assembler) getLabel(label string) (uint16, error) {
+func (a *Assembler) getLabel(label string) (uint16, bool) {
 	value, exists := a.labels[label]
-	if !exists {
-		return 0, fmt.Errorf("no label definition found for %s", label)
-	}
-
-	return value, nil
+	return value, exists
 }
 
 func (a *Assembler) processTokens(tokens []lexer.Token) error {
@@ -328,26 +320,27 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 }
 
 func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) error {
-	if arg.IsDefine {
-		value, err := a.getDefine(arg.Value)
-		if err != nil {
-			return err
+	if arg.IsIdentifier {
+		// first try get define
+		value, exists := a.getDefine(arg.Value)
+		if exists {
+			n, err := strconv.ParseUint(value, 0, 16)
+			if err != nil {
+				return err
+			}
+
+			a.appendInstruction(uint8((n & 0xff00) >> 8))
+			a.appendInstruction(uint8(n & 0xff))
+		} else {
+			// try get label
+			value, exists := a.getLabel(arg.Value)
+			if !exists {
+				return fmt.Errorf("no definition found for identifier %s", arg.Value)
+			}
+			a.appendInstruction(uint8((value & 0xff00) >> 8))
+			a.appendInstruction(uint8((value & 0xff)))
 		}
 
-		n, err := strconv.ParseUint(value, 0, 16)
-		if err != nil {
-			return err
-		}
-
-		a.appendInstruction(uint8((n & 0xff00) >> 8))
-		a.appendInstruction(uint8(n & 0xff))
-	} else if arg.IsLabel {
-		value, err := a.getLabel(arg.Value)
-		if err != nil {
-			return err
-		}
-		a.appendInstruction(uint8((value & 0xff00) >> 8))
-		a.appendInstruction(uint8((value & 0xff)))
 	} else {
 		n := arg.AsUint()
 		a.appendInstruction(uint8((n & 0xff00) >> 8))
@@ -360,24 +353,23 @@ func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) erro
 func (a *Assembler) getInstructionArgs8(arg lexer.Arg, instruction string) (uint8, error) {
 	if arg.IsFPOffsetAddress {
 		return arg.AsUint8(), nil
-	} else if arg.IsDefine {
-		value, err := a.getDefine(arg.Value)
-		if err != nil {
-			return 0, err
+	} else if arg.IsIdentifier {
+		defineValue, exists := a.getDefine(arg.Value)
+		if exists {
+			n, err := strconv.ParseUint(defineValue, 0, 16)
+			if err != nil {
+				return 0, err
+			}
+			return uint8(n), nil
 		}
 
-		n, err := strconv.ParseUint(value, 0, 16)
-		if err != nil {
-			return 0, err
+		labelValue, exists := a.getLabel(arg.Value)
+		if !exists {
+			return 0, fmt.Errorf("no definition found for identifier %s", arg.Value)
 		}
 
-		return uint8(n), nil
-	} else if arg.IsLabel {
-		value, err := a.getLabel(arg.Value)
-		if err != nil {
-			return 0, err
-		}
-		return uint8((value & 0xff)), nil
+		return uint8((labelValue & 0xff)), nil
+
 	} else {
 		return arg.AsUint8(), nil
 	}

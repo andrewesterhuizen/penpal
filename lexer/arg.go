@@ -11,8 +11,7 @@ import (
 type Arg struct {
 	rawValue          string
 	Value             string
-	IsDefine          bool
-	IsLabel           bool
+	IsIdentifier      bool
 	IsFPOffsetAddress bool
 	IsRegister        bool
 }
@@ -36,8 +35,8 @@ func (a *Arg) AsUint8() uint8 {
 
 func (a *Arg) init() {
 	rv := a.rawValue
-	a.IsDefine = rv[0] == '$'
-	a.IsLabel = unicode.IsLetter(rune(rv[0]))
+
+	a.IsIdentifier = unicode.IsLetter(rune(rv[0]))
 
 	// TODO: This won't work for other offset addressing modes
 	a.IsFPOffsetAddress = rv[0] == '+' || rv[0] == '-'
@@ -45,9 +44,7 @@ func (a *Arg) init() {
 	a.IsRegister = len(rv) == 1 && (rv == "A" || rv == "B")
 
 	switch {
-	case a.IsDefine:
-		a.Value = rv[1:]
-	case a.IsLabel:
+	case a.IsIdentifier:
 		a.Value = rv
 	case a.IsFPOffsetAddress:
 		// hack to get this working :(

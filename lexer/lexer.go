@@ -31,27 +31,8 @@ func getInstructionArgs(parts []string) []Arg {
 	return args
 }
 
-func getDefineArgs(parts []string) ([]Arg, error) {
-	partsNoWhiteSpace := []string{}
-
-	for _, s := range parts {
-		if s == " " {
-			continue
-		}
-
-		partsNoWhiteSpace = append(partsNoWhiteSpace, s)
-	}
-
-	parts = partsNoWhiteSpace
-
-	if parts[0] != "=" {
-		return nil, fmt.Errorf("expected '=' and got %s", parts[0])
-	}
-
-	return []Arg{newArg(parts[1])}, nil
-}
-
 var includeRegex = regexp.MustCompile(`#include\s+(<|")(\w+.\w+)["|>]\s*`)
+var defineRegex = regexp.MustCompile(`#define\s+(\w+)\s+(\w+)`)
 
 func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
 	line = strings.TrimSpace(line)
@@ -68,19 +49,19 @@ func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
 
 	switch {
 	case v[0:2] == "//": // comment
-		// skip, might need to be smarter about this in the future
-		// if we want to give error messages with line numbers
+		// skip
 		return nil
-	case v[0] == '$': // define
-		t.Type = TokenDefine
-		t.Value = v[1:]
-		args, err := getDefineArgs(args)
-		if err != nil {
-			return fmt.Errorf("failed to parse define %s: %w", v, err)
-		}
+	case defineRegex.MatchString(line):
+		s := defineRegex.FindStringSubmatch(line)
 
-		t.Args = args
-	case v[0] == '#':
+		name := s[1]
+		value := s[2]
+
+		t.Type = TokenDefine
+		t.Value = name
+
+		t.Args = []Arg{newArg(value)}
+	case includeRegex.MatchString(line):
 		s := includeRegex.FindStringSubmatch(line)
 
 		startChar := s[1]
