@@ -16,6 +16,7 @@ var testCases = []TestCase{
 	TestCase{input: "#include \"test.asm\"", output: []Token{newFileIncludeToken("test.asm")}},
 	TestCase{input: "#include <test>", output: []Token{newSystemIncludeToken("test")}},
 	TestCase{input: "test:", output: []Token{newLabelToken("test")}},
+	TestCase{input: "__test:", output: []Token{newLabelToken("__test")}},
 	TestCase{
 		input: `
 			MOVA 0xa

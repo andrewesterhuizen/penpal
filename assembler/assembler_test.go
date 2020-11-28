@@ -248,3 +248,43 @@ func TestAssembler_MissingSystemInclude_ReturnsError(t *testing.T) {
 		t.Errorf("expected assembler to return error for missing system include")
 	}
 }
+
+func TestAssembler_UndefinedLabel_ReturnsError(t *testing.T) {
+	a := New(Config{disableHeader: true})
+
+	source := `JUMP undefined`
+
+	_, err := a.GetProgram("", source)
+
+	if err == nil {
+		t.Errorf("expected assembler to return error for undefined label")
+	}
+}
+
+func TestAssembler_EntryPointCorrectWithSystemInclude(t *testing.T) {
+	systemIncludes := map[string]string{"test": "SWAP\n"}
+	a := New(Config{disableHeader: false, SystemIncludes: systemIncludes})
+
+	source := `
+	#include <test>
+
+	__start:
+    JUMP __start
+`
+
+	program, err := a.GetProgram("", source)
+	if err != nil {
+		t.Errorf("test failed with error %s", err)
+	}
+
+	startIndex := HeaderSize + 1 // header + include with 1 instruction
+
+	if program[startIndex] != instructions.JUMP {
+		t.Errorf("incorrect entry point in header")
+	}
+
+	if program[startIndex+2] != uint8(startIndex) {
+		t.Errorf("incorrect entry point in header")
+	}
+
+}

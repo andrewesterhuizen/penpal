@@ -30,17 +30,17 @@ func TestArg(t *testing.T) {
 
 		isIdentifier := a.IsIdentifier
 		if isIdentifier != tc.isIdentifier {
-			t.Errorf("expected isIdentifier to be %v and got %v", tc.isIdentifier, isIdentifier)
+			t.Errorf("(%s): expected isIdentifier to be %v and got %v", tc.arg.rawValue, tc.isIdentifier, isIdentifier)
 		}
 
 		isFPOffsetAddress := a.IsFPOffsetAddress
 		if isFPOffsetAddress != tc.isFPOffsetAddress {
-			t.Errorf("expected isFPOffsetAddress to be %v and got %v", tc.isFPOffsetAddress, isFPOffsetAddress)
+			t.Errorf("(%s): expected isFPOffsetAddress to be %v and got %v", tc.arg.rawValue, tc.isFPOffsetAddress, isFPOffsetAddress)
 		}
 
 		value := a.Value
 		if value != tc.value {
-			t.Errorf("expected value to be %v and got %v", tc.value, value)
+			t.Errorf("(%s): expected value to be %v and got %v", tc.arg.rawValue, tc.value, value)
 		}
 	}
 }

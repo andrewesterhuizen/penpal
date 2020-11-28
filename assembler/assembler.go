@@ -87,7 +87,7 @@ func (a *Assembler) processTokens(tokens []lexer.Token) error {
 	for _, t := range tokens {
 		err := a.processToken(t)
 		if err != nil {
-			return fmt.Errorf("%s:%v: %w", t.FileName, t.LineNumber, err)
+			return fmt.Errorf("[%s:%v] %w", t.FileName, t.LineNumber, err)
 		}
 	}
 
@@ -204,11 +204,17 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 				return fmt.Errorf("LOAD: encountered unknown operand type %v", arg0)
 			}
 
-			a.addInstructionArgs16(t.Args[1], instruction)
+			err := a.addInstructionArgs16(t.Args[1], instruction)
+			if err != nil {
+				return err
+			}
 		} else {
 			a.appendInstruction(instructions.Register)
 			a.appendInstruction(instructions.RegisterA)
-			a.addInstructionArgs16(t.Args[0], instruction)
+			err := a.addInstructionArgs16(t.Args[0], instruction)
+			if err != nil {
+				return err
+			}
 		}
 
 	case "POP":
@@ -253,11 +259,17 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 				return fmt.Errorf("STORE: encountered unknown operand type %v", arg0)
 			}
 
-			a.addInstructionArgs16(t.Args[1], instruction)
+			err := a.addInstructionArgs16(t.Args[1], instruction)
+			if err != nil {
+				return err
+			}
 		} else {
 			a.appendInstruction(instructions.Register)
 			a.appendInstruction(instructions.RegisterA)
-			a.addInstructionArgs16(t.Args[0], instruction)
+			err := a.addInstructionArgs16(t.Args[0], instruction)
+			if err != nil {
+				return err
+			}
 		}
 
 	case "ADD":
@@ -295,20 +307,28 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 		if len(t.Args) < 1 {
 			return fmt.Errorf("expected 1 operand for instruction")
 		}
-		a.addInstructionArgs16(t.Args[0], instruction)
-
+		err := a.addInstructionArgs16(t.Args[0], instruction)
+		if err != nil {
+			return err
+		}
 	case "JUMPZ":
 		a.appendInstruction(instructions.JUMPZ)
-		a.addInstructionArgs16(t.Args[0], instruction)
-
+		err := a.addInstructionArgs16(t.Args[0], instruction)
+		if err != nil {
+			return err
+		}
 	case "JUMPNZ":
 		a.appendInstruction(instructions.JUMPNZ)
-		a.addInstructionArgs16(t.Args[0], instruction)
-
+		err := a.addInstructionArgs16(t.Args[0], instruction)
+		if err != nil {
+			return err
+		}
 	case "CALL":
 		a.appendInstruction(instructions.CALL)
-		a.addInstructionArgs16(t.Args[0], instruction)
-
+		err := a.addInstructionArgs16(t.Args[0], instruction)
+		if err != nil {
+			return err
+		}
 	case "RET":
 		a.appendInstruction(instructions.RET)
 
@@ -539,7 +559,10 @@ func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) 
 		out.Write(h)
 	}
 
-	a.processTokens(tokens)
+	err = a.processTokens(tokens)
+	if err != nil {
+		return nil, err
+	}
 
 	out.Write(a.instructions)
 

@@ -45,7 +45,7 @@ func compileFromFile(filename string) {
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
-		log.Fatalf("assembler failed: %v", err)
+		log.Fatal(err)
 	}
 
 	binary.Write(os.Stdout, binary.LittleEndian, program)
@@ -81,7 +81,7 @@ func loadProgramFromFile(filename string) []byte {
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
-		log.Fatalf("assembler failed: %v", err)
+		log.Fatal(err)
 	}
 
 	return program

@@ -3,9 +3,9 @@ package lexer
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 type Arg struct {
@@ -33,15 +33,19 @@ func (a *Arg) AsUint8() uint8 {
 	return uint8(parseInt(a.Value, 16))
 }
 
+var identifierRegex = regexp.MustCompile(`\w+`)
+
 func (a *Arg) init() {
 	rv := a.rawValue
-
-	a.IsIdentifier = unicode.IsLetter(rune(rv[0]))
 
 	// TODO: This won't work for other offset addressing modes
 	a.IsFPOffsetAddress = rv[0] == '+' || rv[0] == '-'
 
 	a.IsRegister = len(rv) == 1 && (rv == "A" || rv == "B")
+
+	if !a.IsRegister && !a.IsFPOffsetAddress && len(rv) >= 2 && rv[0] != '0' && rv[1] != 'x' {
+		a.IsIdentifier = identifierRegex.MatchString(rv)
+	}
 
 	switch {
 	case a.IsIdentifier:

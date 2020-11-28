@@ -2,7 +2,6 @@ package penpal
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 )
 
@@ -93,8 +92,6 @@ func GetSystemIncludes() (map[string]string, error) {
 	}
 
 	midiInclude := buf.String()
-
-	fmt.Println(midiInclude)
 
 	includes["midi"] = midiInclude
 

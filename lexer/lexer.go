@@ -7,7 +7,6 @@ import (
 )
 
 type Lexer struct {
-	source string
 	tokens []Token
 }
 
@@ -23,8 +22,7 @@ var defineRegex = regexp.MustCompile(`#define\s+(\w+)\s+(\w+)`)
 var instructionRegex = regexp.MustCompile(`([\w\(\)\+\-]+)`)
 
 func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
-	line = strings.TrimSpace(line)
-	if line == "" {
+	if strings.TrimSpace(line) == "" {
 		return nil
 	}
 
@@ -94,11 +92,10 @@ func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
 }
 
 func (l *Lexer) GetTokens(filename string, source string) ([]Token, error) {
-	l.source = strings.TrimSpace(source)
-	lines := strings.Split(l.source, "\n")
+	lines := strings.Split(source, "\n")
 
 	for i, line := range lines {
-		err := l.parseLine(filename, i, line)
+		err := l.parseLine(filename, i+1, line)
 		if err != nil {
 			return nil, fmt.Errorf("lexing failed at line %d, (%s): %w", i, line, err)
 		}
