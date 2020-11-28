@@ -10,7 +10,7 @@ type TestCase struct {
 }
 
 var testCases = []TestCase{
-	TestCase{input: "MOVA 0xab", output: []Token{newInstructionToken("MOVA", newArgs("0xab"))}},
+	TestCase{input: "MOV A 0xab", output: []Token{newInstructionToken("MOV", newArgs("A", "0xab"))}},
 	TestCase{input: "JUMP 0xabcd", output: []Token{newInstructionToken("JUMP", newArgs("0xabcd"))}},
 	TestCase{input: "#define TEST 0xbc", output: []Token{newDefineToken("TEST", newArgs("0xbc"))}},
 	TestCase{input: "#include \"test.asm\"", output: []Token{newFileIncludeToken("test.asm")}},

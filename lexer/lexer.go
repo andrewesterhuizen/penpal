@@ -16,23 +16,11 @@ func New() Lexer {
 	return l
 }
 
-func getInstructionArgs(parts []string) []Arg {
-	args := []Arg{}
-	for _, s := range parts {
-		if s == " " {
-			continue
-		}
-
-		a := newArg(s)
-
-		args = append(args, a)
-	}
-
-	return args
-}
-
+var lineCommentRegex = regexp.MustCompile(`^\s*[//|;]`)
+var labelRegex = regexp.MustCompile(`(\w+):`)
 var includeRegex = regexp.MustCompile(`#include\s+(<|")(\w+.\w+)["|>]\s*`)
 var defineRegex = regexp.MustCompile(`#define\s+(\w+)\s+(\w+)`)
+var instructionRegex = regexp.MustCompile(`([\w\(\)\+\-]+)`)
 
 func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
 	line = strings.TrimSpace(line)
@@ -42,13 +30,8 @@ func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
 
 	t := Token{FileName: filename, LineNumber: lineNumber}
 
-	lineSplit := strings.Split(line, " ")
-
-	v := strings.TrimSpace(lineSplit[0])
-	args := lineSplit[1:]
-
 	switch {
-	case v[0:2] == "//": // comment
+	case lineCommentRegex.MatchString(line):
 		// skip
 		return nil
 	case defineRegex.MatchString(line):
@@ -77,14 +60,32 @@ func (l *Lexer) parseLine(filename string, lineNumber int, line string) error {
 			return fmt.Errorf("expected next char to be \" or < and got %v", startChar)
 		}
 
-	case v[len(v)-1] == ':': // label
+	case labelRegex.MatchString(line):
+		s := labelRegex.FindStringSubmatch(line)
 		t.Type = TokenLabel
-		t.Value = v[0 : len(v)-1]
+		t.Value = s[1]
 
-	default: // instruction
+	default:
+		matches := instructionRegex.FindAllString(line, -1)
+
 		t.Type = TokenInstruction
-		t.Value = v
-		t.Args = getInstructionArgs(args)
+		t.Value = matches[0]
+
+		operands := matches[1:]
+
+		args := []Arg{}
+
+		for _, o := range operands {
+			if o == " " {
+				continue
+			}
+
+			a := newArg(o)
+
+			args = append(args, a)
+		}
+
+		t.Args = args
 	}
 
 	l.tokens = append(l.tokens, t)
