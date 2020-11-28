@@ -17,18 +17,25 @@ const (
 )
 
 var midiIncludeTemplateText = `
+#define MIDI_ADDRESS_BPM {{.AddressBPM | printf "0x%02x"}} 
+#define MIDI_ADDRESS_PPQN {{.AddressPPQN | printf "0x%02x"}} 
+#define MIDI_ADDRESS_STATUS {{.AddressStatus | printf "0x%02x"}} 
+#define MIDI_ADDRESS_DATA1 {{.AddressData1 | printf "0x%02x"}} 
+#define MIDI_ADDRESS_DATA2 {{.AddressData2 | printf "0x%02x"}} 
+#define MIDI_ADDRESS_SEND_MESSAGE {{.AddressSendMessage | printf "0x%02x"}} 
+
 // args: (status, data1, data2)
 midi_send_message:
 	// status
-	STORE +5(fp) {{.AddressStatus | printf "0x%02x"}} 
+	STORE +5(fp) MIDI_ADDRESS_STATUS
 	// data1
-	STORE +6(fp) {{.AddressData1 | printf "0x%02x"}}  
+	STORE +6(fp) MIDI_ADDRESS_DATA1
 	// data2
-	STORE +7(fp) {{.AddressData2 | printf "0x%02x"}} 
+	STORE +7(fp) MIDI_ADDRESS_DATA2
 
 	// set send byte
 	MOV A 0x1
-	STORE A {{.AddressSendMessage | printf "0x%02x"}} 
+	STORE A MIDI_ADDRESS_SEND_MESSAGE
 
 	RET
 
@@ -73,6 +80,8 @@ func GetSystemIncludes() (map[string]string, error) {
 	}
 
 	data := map[string]int{
+		"AddressBPM":         AddressBPM,
+		"AddressPPQN":        AddressPPQN,
 		"AddressStatus":      AddressStatus,
 		"AddressData1":       AddressData1,
 		"AddressData2":       AddressData2,
