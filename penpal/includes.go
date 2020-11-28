@@ -17,7 +17,8 @@ const (
 )
 
 var midiIncludeTemplateText = `
-send_midi:
+// args: (status, data1, data2)
+midi_send_message:
 	// status
 	STORE +5(fp) {{.AddressStatus | printf "0x%02x"}} 
 	// data1
@@ -31,20 +32,32 @@ send_midi:
 
 	RET
 
-trig:
-    // note on
-    PUSH 0x63
-    PUSH +5(fp)
-    PUSH 0x90
-    PUSH 0x3
-    CALL send_midi
+// args: (note)
+midi_trig:
+	// send note on
 
-    // note off
-    PUSH 0x63
+	// data2 (velocity)
+	PUSH 0x7F
+	// data1 (note)
+	PUSH +5(fp)
+	// status (0x90/note on)
+	PUSH 0x90
+	// number of args
+	PUSH 0x3
+	CALL midi_send_message
+
+	
+	// send note off
+
+	// data2 (velocity)
+	PUSH 0x63
+	// data1 (note)
     PUSH +5(fp)
-    PUSH 0x80
+	// status (0x80/note off)
+	PUSH 0x80
+	// number of args
     PUSH 0x3
-    CALL send_midi
+    CALL midi_send_message
 
     RET
 `

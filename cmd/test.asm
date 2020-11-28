@@ -3,5 +3,5 @@
 __start:
     PUSH 0x30
     PUSH 0x1
-    CALL trig
+    CALL midi_trig
     HALT
