@@ -61,7 +61,6 @@ var instructionTestCases = []TestCase{
 	{input: "AND", output: []uint8{instructions.AND}},
 	{input: "OR", output: []uint8{instructions.OR}},
 	{input: "HALT", output: []uint8{instructions.HALT}},
-	{input: "SEND", output: []uint8{instructions.SEND}},
 	{input: "RAND", output: []uint8{instructions.RAND}},
 	{input: "JUMP 0xcd", output: []uint8{instructions.JUMP, 0x00, 0xcd}},
 	{input: "JUMP 0xaecd", output: []uint8{instructions.JUMP, 0xae, 0xcd}},

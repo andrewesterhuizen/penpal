@@ -295,9 +295,6 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 	case "HALT":
 		a.appendInstruction(instructions.HALT)
 
-	case "SEND":
-		a.appendInstruction(instructions.SEND)
-
 	case "RAND":
 		a.appendInstruction(instructions.RAND)
 
