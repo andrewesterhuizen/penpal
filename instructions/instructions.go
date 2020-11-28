@@ -22,7 +22,6 @@ const (
 	CALL
 	RET
 	RAND
-	SEND
 
 	Value                       = 0x0
 	Register                    = 0x1
@@ -56,7 +55,6 @@ var Names = map[uint8]string{
 	POP:    "POP",
 	CALL:   "CALL",
 	RET:    "RET",
-	SEND:   "SEND",
 	RAND:   "RAND",
 }
 
@@ -82,7 +80,6 @@ var InstructionByName = map[string]uint8{
 	"CALL":   CALL,
 	"RET":    RET,
 	"RAND":   RAND,
-	"SEND":   SEND,
 }
 
 var Width = map[uint8]int{
@@ -107,7 +104,6 @@ var Width = map[uint8]int{
 	CALL:   3,
 	RET:    1,
 	RAND:   1,
-	SEND:   1,
 }
 
 var RegistersByName = map[string]uint8{

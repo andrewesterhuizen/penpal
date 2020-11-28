@@ -36,7 +36,12 @@ func compileFromFile(filename string) {
 		log.Fatal(err)
 	}
 
-	a := assembler.New(assembler.Config{SystemIncludes: penpal.SystemIncludes})
+	systemIncludes, err := penpal.GetSystemIncludes()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	a := assembler.New(assembler.Config{SystemIncludes: systemIncludes})
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
@@ -67,7 +72,12 @@ func loadProgramFromFile(filename string) []byte {
 		return f
 	}
 
-	a := assembler.New(assembler.Config{SystemIncludes: penpal.SystemIncludes})
+	systemIncludes, err := penpal.GetSystemIncludes()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	a := assembler.New(assembler.Config{SystemIncludes: systemIncludes})
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
@@ -80,30 +90,47 @@ func loadProgramFromFile(filename string) []byte {
 func executeProgramFromFile(filename string) {
 	program := loadProgramFromFile(filename)
 
-	vm := vm.New(midi.NewPortMidiMidiHandler())
+	midiHandler := midi.NewPortMidiMidiHandler()
+	defer midiHandler.Close()
+
+	vm := vm.New()
 
 	msPerMinute := 60 * 1000
 
 	// TODO: clock should be enabled according to a flag
 	go func() {
 		for {
-			bpm, ppqn := vm.GetMidiClockData()
+			bpm := vm.GetMemory(penpal.AddressBPM)
+			ppqn := vm.GetMemory(penpal.AddressPPQN)
+
 			if bpm == 0 || ppqn == 0 {
 				time.Sleep(10 * time.Millisecond)
 				continue
 			}
 
 			interval := (msPerMinute / int(bpm)) / int(ppqn)
-			vm.Tick()
+
+			// TODO: call interupt
+
 			time.Sleep(time.Duration(interval) * time.Millisecond)
 		}
 	}()
 
 	vm.Load(program)
-	vm.Run()
+
+	for !vm.Halted {
+		vm.Tick()
+
+		midiBytes := vm.GetMemorySection(penpal.AddressMidiMessageStart, 4)
+
+		if midiBytes[3] > 0 {
+			midiHandler.Send(midiBytes[0], midiBytes[1], midiBytes[2])
+			vm.SetMemory(penpal.AddressSendMessage, 0x0)
+		}
+	}
+
 	// vm.PrintReg()
 	// vm.PrintMem(0, 0xf)
-	vm.Close()
 }
 
 func main() {

@@ -7,16 +7,13 @@ import (
 	"time"
 
 	"github.com/andrewesterhuizen/penpal/instructions"
-	"github.com/andrewesterhuizen/penpal/midi"
 )
 
 const memorySize = 0xffff
 
-const midiMessageMemoryLocation = 0x0   // 3 bytes
-const midiClockBPMMemoryLocation = 0x4  // 1 byte
-const midiClockPPQNMemoryLocation = 0x5 // 1 byte
-
 type VM struct {
+	Halted bool
+
 	ip           uint16
 	sp           uint16
 	fp           uint16
@@ -24,13 +21,12 @@ type VM struct {
 	b            uint8
 	memory       [memorySize]uint8
 	instructions []uint8
-	midi         midi.MidiHandler
 }
 
-func New(midi midi.MidiHandler) VM {
+func New() VM {
 	rand.Seed(time.Now().UnixNano())
 
-	vm := VM{midi: midi}
+	vm := VM{}
 	vm.ip = 0
 	vm.sp = memorySize - 1
 	vm.fp = memorySize - 1
@@ -296,14 +292,6 @@ func (vm *VM) execute(instruction uint8) {
 		vm.fp += uint16(4) // frame size is always 4 but this could change
 		vm.ip = addr
 
-	case instructions.SEND:
-		status := vm.memory[midiMessageMemoryLocation]
-		data1 := vm.memory[midiMessageMemoryLocation+1]
-		data2 := vm.memory[midiMessageMemoryLocation+2]
-
-		vm.midi.Send(status, data1, data2)
-		vm.ip++
-
 	case instructions.RAND:
 		vm.a = uint8(rand.Intn(255))
 		vm.ip++
@@ -328,12 +316,16 @@ func (vm *VM) Load(instructions []uint8) {
 	vm.instructions = instructions
 }
 
-func (vm *VM) GetMidiClockData() (bpm uint8, ppqn uint8) {
-	return vm.memory[midiClockBPMMemoryLocation], vm.memory[midiClockPPQNMemoryLocation]
+func (vm *VM) GetMemorySection(start uint16, n uint16) []byte {
+	return vm.memory[start : start+n]
 }
 
-func (vm *VM) Tick() {
-	// fmt.Println("Tick")
+func (vm *VM) GetMemory(addr uint16) uint8 {
+	return vm.memory[addr]
+}
+
+func (vm *VM) SetMemory(addr uint16, value uint8) {
+	vm.memory[addr] = value
 }
 
 func (vm *VM) PrintReg() {
@@ -346,18 +338,11 @@ func (vm *VM) PrintMem(start uint16, n uint16) {
 	}
 }
 
-func (vm *VM) Run() {
-	ins := vm.instructions
-
-	for {
-		if ins[vm.ip] == instructions.HALT {
-			break
-		}
-
-		vm.execute(ins[vm.ip])
+func (vm *VM) Tick() {
+	if vm.instructions[vm.ip] == instructions.HALT {
+		vm.Halted = true
+		return
 	}
-}
 
-func (vm *VM) Close() {
-	vm.midi.Close()
+	vm.execute(vm.instructions[vm.ip])
 }
