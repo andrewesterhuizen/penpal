@@ -48,6 +48,9 @@ func compileFromFile(filename string) {
 		log.Fatal(err)
 	}
 
+	header := penpal.GetHeaderBytes()
+
+	binary.Write(os.Stdout, binary.LittleEndian, header)
 	binary.Write(os.Stdout, binary.LittleEndian, program)
 }
 
@@ -69,7 +72,7 @@ func loadProgramFromFile(filename string) []byte {
 	}
 
 	if binary {
-		return f
+		return f[penpal.HeaderSize:]
 	}
 
 	systemIncludes, err := penpal.GetSystemIncludes()
@@ -77,7 +80,10 @@ func loadProgramFromFile(filename string) []byte {
 		log.Fatal(err)
 	}
 
-	a := assembler.New(assembler.Config{SystemIncludes: systemIncludes})
+	a := assembler.New(assembler.Config{
+		SystemIncludes: systemIncludes,
+		InteruptLabels: [3]string{"on_tick"},
+	})
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
@@ -104,33 +110,54 @@ func executeProgramFromFile(filename string) {
 			ppqn := vm.GetMemory(penpal.AddressPPQN)
 
 			if bpm == 0 || ppqn == 0 {
-				time.Sleep(10 * time.Millisecond)
 				continue
 			}
 
 			interval := (msPerMinute / int(bpm)) / int(ppqn)
-
-			// TODO: call interupt
-
+			vm.Interupt(0)
 			time.Sleep(time.Duration(interval) * time.Millisecond)
+
 		}
 	}()
 
 	vm.Load(program)
 
-	for !vm.Halted {
-		vm.Tick()
+	clockSpeedMHz := 4
+	clockInterval := (1000 / time.Duration(clockSpeedMHz)) * time.Nanosecond
 
-		midiBytes := vm.GetMemorySection(penpal.AddressMidiMessageStart, 4)
+	ticker := time.NewTicker(clockInterval)
+	defer ticker.Stop()
 
-		if midiBytes[3] > 0 {
-			midiHandler.Send(midiBytes[0], midiBytes[1], midiBytes[2])
+	done := make(chan bool)
+	messages := make(chan midi.MidiMessage)
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if vm.Halted {
+					done <- true
+					return
+				}
+
+				vm.Tick()
+				m := vm.GetMemorySection(penpal.AddressMidiMessageStart, 4)
+
+				if m[3] > 0 {
+					messages <- midi.MidiMessage{m[0], m[1], m[2]}
+				}
+			}
+		}
+	}()
+
+	go func() {
+		for m := range messages {
+			midiHandler.Send(m[0], m[1], m[2])
 			vm.SetMemory(penpal.AddressSendMessage, 0x0)
 		}
-	}
+	}()
 
-	// vm.PrintReg()
-	// vm.PrintMem(0, 0xf)
+	<-done
 }
 
 func main() {

@@ -2,6 +2,7 @@ package assembler
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 	"github.com/andrewesterhuizen/penpal/lexer"
 )
 
-const HeaderSize = 10
+const EntryPointsTableSize = 12
 
 type FileGetterFunc func(path string) (string, error)
 
@@ -24,9 +25,10 @@ func FileSystemFileGetterFunc(path string) (string, error) {
 }
 
 type Config struct {
-	disableHeader  bool
-	FileGetterFunc FileGetterFunc
-	SystemIncludes map[string]string
+	disableEntryPointsTable bool
+	FileGetterFunc          FileGetterFunc
+	SystemIncludes          map[string]string
+	InteruptLabels          [3]string
 }
 
 type Assembler struct {
@@ -66,8 +68,8 @@ func New(config Config) Assembler {
 
 	a.currentLableAddress = 0
 
-	if !config.disableHeader {
-		a.currentLableAddress = HeaderSize
+	if !config.disableEntryPointsTable {
+		a.currentLableAddress += EntryPointsTableSize
 	}
 
 	return a
@@ -78,7 +80,7 @@ func (a *Assembler) getDefine(define string) (string, bool) {
 	return value, exists
 }
 
-func (a *Assembler) getLabel(label string) (uint16, bool) {
+func (a *Assembler) getLabelAddress(label string) (uint16, bool) {
 	value, exists := a.labels[label]
 	return value, exists
 }
@@ -332,6 +334,9 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 	case "RET":
 		a.appendInstruction(instructions.RET)
 
+	case "RETI":
+		a.appendInstruction(instructions.RETI)
+
 	default:
 		return fmt.Errorf("encountered unknown instruction %s", instruction)
 	}
@@ -353,7 +358,7 @@ func (a *Assembler) addInstructionArgs16(arg lexer.Arg, instruction string) erro
 			a.appendInstruction(uint8(n & 0xff))
 		} else {
 			// try get label
-			value, exists := a.getLabel(arg.Value)
+			value, exists := a.getLabelAddress(arg.Value)
 			if !exists {
 				return fmt.Errorf("no definition found for identifier %s", arg.Value)
 			}
@@ -383,7 +388,7 @@ func (a *Assembler) getInstructionArgs8(arg lexer.Arg, instruction string) (uint
 			return uint8(n), nil
 		}
 
-		labelValue, exists := a.getLabel(arg.Value)
+		labelValue, exists := a.getLabelAddress(arg.Value)
 		if !exists {
 			return 0, fmt.Errorf("no definition found for identifier %s", arg.Value)
 		}
@@ -405,30 +410,6 @@ func (a *Assembler) addInstructionArgs8(arg lexer.Arg, instruction string) error
 	a.appendInstruction(v)
 
 	return nil
-}
-
-func (a *Assembler) getHeaderBytes() ([]byte, error) {
-	buf := bytes.Buffer{}
-
-	entryPointAddress, exists := a.labels["__start"]
-	// check for entry point
-	if !exists {
-		return nil, fmt.Errorf("source has no entry point")
-	}
-
-	for _, b := range []byte("PENPAL") {
-		buf.WriteByte(b)
-	}
-
-	// version
-	buf.WriteByte(0)
-	buf.WriteByte(1)
-
-	// entry point
-	buf.WriteByte(byte((entryPointAddress & 0xff00) >> 8))
-	buf.WriteByte(byte(entryPointAddress & 0xff))
-
-	return buf.Bytes(), nil
 }
 
 func (a *Assembler) getFileInclude(name string) error {
@@ -527,6 +508,31 @@ func (a *Assembler) getLabels(tokens []lexer.Token) error {
 	return nil
 }
 
+func (a *Assembler) getEntryPointTableBytes() ([]byte, error) {
+	buf := bytes.Buffer{}
+
+	entryPointAddress, exists := a.labels["__start"]
+	if !exists {
+		return nil, fmt.Errorf("source has no entry point")
+	}
+
+	// entry point
+	buf.WriteByte(instructions.JUMP)
+	binary.Write(&buf, binary.BigEndian, entryPointAddress)
+
+	for _, label := range a.config.InteruptLabels {
+		labelAddress, exists := a.labels[label]
+		if exists {
+			buf.WriteByte(instructions.JUMP)
+			binary.Write(&buf, binary.BigEndian, labelAddress)
+		} else {
+			buf.Write([]byte{0, 0, 0})
+		}
+	}
+
+	return buf.Bytes(), nil
+}
+
 func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) {
 	l := lexer.New()
 
@@ -550,13 +556,14 @@ func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) 
 
 	out := bytes.Buffer{}
 
-	if !a.config.disableHeader {
-		h, err := a.getHeaderBytes()
+	if !a.config.disableEntryPointsTable {
+		// add entry point instruction
+		entryPointTableBytes, err := a.getEntryPointTableBytes()
 		if err != nil {
 			return nil, err
 		}
 
-		out.Write(h)
+		out.Write(entryPointTableBytes)
 	}
 
 	err = a.processTokens(tokens)

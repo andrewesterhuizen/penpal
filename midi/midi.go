@@ -12,6 +12,8 @@ type Device struct {
 	Id   int
 }
 
+type MidiMessage [3]byte
+
 type MidiHandler interface {
 	Send(status byte, data1 byte, data2 byte)
 	Close()

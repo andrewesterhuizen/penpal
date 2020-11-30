@@ -21,6 +21,9 @@ type VM struct {
 	b            uint8
 	memory       [memorySize]uint8
 	instructions []uint8
+
+	// TODO: make nested interupts work
+	inInterupt bool
 }
 
 func New() VM {
@@ -85,14 +88,79 @@ func (vm *VM) getFramePointerRelativeAddress(offset int8) uint16 {
 	return addr
 }
 
-func (vm *VM) execute(instruction uint8) {
-	name, exists := instructions.Names[instruction]
-	if !exists {
-		log.Fatalf("encountered unknown instruction 0x%02x", instruction)
+func (vm *VM) saveState(interupt bool) {
+	// a register is used for return value in subroutines so we don't save it for non interupts
+	if interupt {
+		vm.push(vm.a)
 	}
 
-	fmt.Printf("Executing %s\n", name)
+	vm.push(vm.b)
+	vm.push16(vm.fp)
+	vm.push16(vm.ip)
+	vm.fp = vm.sp
+}
 
+func (vm *VM) restoreState(interupt bool) {
+	vm.sp = vm.fp
+	vm.ip = vm.pop16()
+	prevfp := vm.pop16()
+	vm.b = vm.pop()
+
+	if interupt {
+		vm.a = vm.pop()
+	}
+
+	vm.sp = vm.fp
+	vm.fp = prevfp
+}
+
+func (vm *VM) call(addr uint16) {
+	vm.saveState(false)
+	vm.ip = addr
+}
+
+func (vm *VM) ret() {
+	vm.restoreState(false)
+
+	// remove args from stack
+	nArgs := vm.pop()
+	for i := 0; i < int(nArgs); i++ {
+		vm.pop()
+	}
+}
+
+func (vm *VM) callInterupt(addr uint16) {
+	vm.inInterupt = true
+	vm.saveState(true)
+	vm.ip = addr
+}
+
+func (vm *VM) retFromInterupt() {
+	vm.restoreState(true)
+	vm.inInterupt = false
+}
+
+func (vm *VM) Interupt(n int) {
+	if vm.inInterupt {
+		return
+	}
+
+	// only 3 interupts for now
+	if n >= 3 {
+		return
+	}
+
+	// each jump instruction is 3 bytes wide
+	// address of interupt jump location = entry point + (interupt number * 3 bytes)
+	addr := uint16(3 + (n * 3))
+
+	// if interupt has been set
+	if vm.instructions[addr] > 0 {
+		vm.callInterupt(addr)
+	}
+}
+
+func (vm *VM) execute(instruction uint8) {
 	switch instruction {
 	case instructions.SWAP:
 		vm.a, vm.b = vm.b, vm.a
@@ -264,33 +332,14 @@ func (vm *VM) execute(instruction uint8) {
 
 	case instructions.CALL:
 		addr := vm.fetch16()
-
-		// save state
-		// vm.push(vm.a)
-		vm.push(vm.b)
-		vm.push16(vm.ip + 1) // return address
-		// vm.push(4 + 1)       // frame size, including this byte
-
-		vm.fp = vm.sp // save frame pointer
-		vm.ip = addr  // set ip to called address
+		vm.call(addr)
 
 	case instructions.RET:
-		vm.sp = vm.fp
+		vm.ret()
+		vm.ip++
 
-		// restore state
-		// frameSize := vm.pop()
-		addr := vm.pop16()
-		vm.b = vm.pop()
-		// vm.a = vm.pop()
-
-		// remove args from stack
-		nArgs := vm.pop()
-		for i := 0; i < int(nArgs); i++ {
-			vm.pop()
-		}
-
-		vm.fp += uint16(4) // frame size is always 4 but this could change
-		vm.ip = addr
+	case instructions.RETI:
+		vm.retFromInterupt()
 
 	case instructions.RAND:
 		vm.a = uint8(rand.Intn(255))
@@ -303,16 +352,7 @@ func (vm *VM) execute(instruction uint8) {
 }
 
 func (vm *VM) Load(instructions []uint8) {
-	// decode header
-	// versionMajor := instructions[0x6]
-	// versionMinor := instructions[0x7]
-
-	entryPointAddressH := instructions[0x8]
-	entryPointAddressL := instructions[0x9]
-
-	entryPoint := (uint16(entryPointAddressH) << 8) | uint16(entryPointAddressL)
-	vm.ip = entryPoint
-
+	vm.ip = 0
 	vm.instructions = instructions
 }
 
@@ -334,7 +374,19 @@ func (vm *VM) PrintReg() {
 
 func (vm *VM) PrintMem(start uint16, n uint16) {
 	for i := start; i < start+n; i++ {
-		fmt.Printf("%04x: 0x%02x\n", i, vm.memory[i])
+		if vm.sp == i {
+			fmt.Printf("sp ->")
+		} else {
+			fmt.Print("     ")
+		}
+
+		fmt.Printf("%04x: 0x%02x", i, vm.memory[i])
+
+		if vm.fp == i {
+			fmt.Printf("<- fp\n")
+		} else {
+			fmt.Print("\n")
+		}
 	}
 }
 

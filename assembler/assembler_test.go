@@ -52,6 +52,7 @@ var instructionTestCases = []TestCase{
 	{input: "PUSH -1(fp)", output: []uint8{instructions.PUSH, instructions.FramePointerRelativeAddress, 0xff}},
 	{input: "CALL 0xbeaf", output: []uint8{instructions.CALL, 0xbe, 0xaf}},
 	{input: "RET", output: []uint8{instructions.RET}},
+	{input: "RETI", output: []uint8{instructions.RETI}},
 	{input: "ADD", output: []uint8{instructions.ADD}},
 	{input: "SUB", output: []uint8{instructions.SUB}},
 	{input: "MUL", output: []uint8{instructions.MUL}},
@@ -192,9 +193,9 @@ func TestInstructions(t *testing.T) {
 		}
 
 		cfg := Config{
-			disableHeader:  true,
-			FileGetterFunc: newMockFileGetterFunc(files),
-			SystemIncludes: tc.systemIncludes,
+			disableEntryPointsTable: true,
+			FileGetterFunc:          newMockFileGetterFunc(files),
+			SystemIncludes:          tc.systemIncludes,
 		}
 
 		a := New(cfg)
@@ -227,18 +228,49 @@ func TestAssembler_NoEntryPoint_ReturnsError(t *testing.T) {
 	}
 }
 
-// this test should fail if I forget to update the HeaderSize constant
-func TestAssembler_EntryPointSkipsHeader(t *testing.T) {
-	a := New(Config{})
-	ins, _ := a.GetProgram("", "__start:\nSWAP\nOR\nADD\n")
+func TestAssembler_getEntryPointTableBytes_returnsExpectedBytes(t *testing.T) {
+	interuptLabels := [3]string{"test", "", "test2"}
+	a := New(Config{InteruptLabels: interuptLabels})
 
-	if (ins[HeaderSize] != instructions.SWAP) || (ins[HeaderSize+1] != instructions.OR) || (ins[HeaderSize+2] != instructions.ADD) {
-		t.Errorf("expected assembler to return error for source with no entry point")
+	a.labels["__start"] = 0x1234
+	a.labels["test"] = 0xabcd
+	a.labels["test2"] = 0xa1b2
+
+	entryPointBytes, err := a.getEntryPointTableBytes()
+	if err != nil {
+		t.Errorf("unexpected error while getting entry point bytes: %s", err)
+	}
+
+	expected := []byte{
+		instructions.JUMP, 0x12, 0x34,
+		instructions.JUMP, 0xab, 0xcd,
+		0x0, 0x0, 0x0,
+		instructions.JUMP, 0xa1, 0xb2,
+	}
+
+	for i, b := range expected {
+		if b != entryPointBytes[i] {
+			t.Errorf("expected byte 0x%02x and got 0x%02x, at position %d", b, entryPointBytes[i], i)
+
+		}
+	}
+}
+
+func TestAssembler_AddsEntryPointBytesAtExpectedLocation(t *testing.T) {
+	a := New(Config{})
+	program, _ := a.GetProgram("", "__start:HALT\n")
+
+	entryPoint := EntryPointsTableSize
+	eph := byte((entryPoint & 0xff00) >> 8)
+	epl := byte(entryPoint & 0xff)
+
+	if program[0] != instructions.JUMP || program[1] != eph || program[2] != epl {
+		t.Errorf("expected assembler to add entry point bytes")
 	}
 }
 
 func TestAssembler_MissingSystemInclude_ReturnsError(t *testing.T) {
-	a := New(Config{disableHeader: true})
+	a := New(Config{})
 
 	source := `#include <missing>`
 
@@ -250,7 +282,7 @@ func TestAssembler_MissingSystemInclude_ReturnsError(t *testing.T) {
 }
 
 func TestAssembler_UndefinedLabel_ReturnsError(t *testing.T) {
-	a := New(Config{disableHeader: true})
+	a := New(Config{})
 
 	source := `JUMP undefined`
 
@@ -263,7 +295,10 @@ func TestAssembler_UndefinedLabel_ReturnsError(t *testing.T) {
 
 func TestAssembler_EntryPointCorrectWithSystemInclude(t *testing.T) {
 	systemIncludes := map[string]string{"test": "SWAP\n"}
-	a := New(Config{disableHeader: false, SystemIncludes: systemIncludes})
+	a := New(Config{
+		disableEntryPointsTable: false,
+		SystemIncludes:          systemIncludes,
+	})
 
 	source := `
 	#include <test>
@@ -277,7 +312,7 @@ func TestAssembler_EntryPointCorrectWithSystemInclude(t *testing.T) {
 		t.Errorf("test failed with error %s", err)
 	}
 
-	startIndex := HeaderSize + 1 // header + include with 1 instruction
+	startIndex := EntryPointsTableSize + 1
 
 	if program[startIndex] != instructions.JUMP {
 		t.Errorf("incorrect entry point in header")

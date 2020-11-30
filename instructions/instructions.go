@@ -21,6 +21,7 @@ const (
 	POP
 	CALL
 	RET
+	RETI
 	RAND
 
 	Value                       = 0x0
@@ -55,6 +56,7 @@ var Names = map[uint8]string{
 	POP:    "POP",
 	CALL:   "CALL",
 	RET:    "RET",
+	RETI:   "RETI",
 	RAND:   "RAND",
 }
 
@@ -79,6 +81,7 @@ var InstructionByName = map[string]uint8{
 	"POP":    POP,
 	"CALL":   CALL,
 	"RET":    RET,
+	"RETI":   RETI,
 	"RAND":   RAND,
 }
 
@@ -103,6 +106,7 @@ var Width = map[uint8]int{
 	POP:    1,
 	CALL:   3,
 	RET:    1,
+	RETI:   1,
 	RAND:   1,
 }
 
