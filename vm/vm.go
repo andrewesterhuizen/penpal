@@ -14,27 +14,29 @@ const memorySize = 0xffff
 type VM struct {
 	Halted bool
 
-	ip           uint16
-	sp           uint16
-	fp           uint16
-	a            uint8
-	b            uint8
-	memory       [memorySize]uint8
-	instructions []uint8
+	ip     uint16
+	sp     uint16
+	fp     uint16
+	a      uint8
+	b      uint8
+	memory [memorySize]uint8
 
 	// TODO: make nested interupts work
 	inInterupt bool
 }
 
-func New() VM {
+func New() *VM {
 	rand.Seed(time.Now().UnixNano())
 
 	vm := VM{}
+	vm.init()
+	return &vm
+}
+
+func (vm *VM) init() {
 	vm.ip = 0
 	vm.sp = memorySize - 1
 	vm.fp = memorySize - 1
-
-	return vm
 }
 
 func (vm *VM) push(value uint8) {
@@ -64,14 +66,14 @@ func (vm *VM) pop16() uint16 {
 
 func (vm *VM) fetch() uint8 {
 	vm.ip++
-	return vm.instructions[vm.ip]
+	return vm.memory[vm.ip]
 }
 
 func (vm *VM) fetch16() uint16 {
 	vm.ip++
-	h := uint16(vm.instructions[vm.ip])
+	h := uint16(vm.memory[vm.ip])
 	vm.ip++
-	l := uint16(vm.instructions[vm.ip])
+	l := uint16(vm.memory[vm.ip])
 	return (h << 8) | l
 }
 
@@ -155,7 +157,7 @@ func (vm *VM) Interupt(n int) {
 	addr := uint16(3 + (n * 3))
 
 	// if interupt has been set
-	if vm.instructions[addr] > 0 {
+	if vm.memory[addr] > 0 {
 		vm.callInterupt(addr)
 	}
 }
@@ -352,8 +354,8 @@ func (vm *VM) execute(instruction uint8) {
 }
 
 func (vm *VM) Load(instructions []uint8) {
-	vm.ip = 0
-	vm.instructions = instructions
+	vm.init()
+	copy(vm.memory[:], instructions)
 }
 
 func (vm *VM) GetMemorySection(start uint16, n uint16) []byte {
@@ -391,10 +393,10 @@ func (vm *VM) PrintMem(start uint16, n uint16) {
 }
 
 func (vm *VM) Tick() {
-	if vm.instructions[vm.ip] == instructions.HALT {
+	if vm.memory[vm.ip] == instructions.HALT {
 		vm.Halted = true
 		return
 	}
 
-	vm.execute(vm.instructions[vm.ip])
+	vm.execute(vm.memory[vm.ip])
 }

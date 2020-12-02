@@ -5,14 +5,15 @@ import (
 	"text/template"
 )
 
+// TODO: these are just random addresses, these should be changed to labels to DBs in the include
 const (
-	AddressBPM              = 0x0
-	AddressPPQN             = 0x1
-	AddressMidiMessageStart = 0x2
-	AddressStatus           = 0x2
-	AddressData1            = 0x3
-	AddressData2            = 0x4
-	AddressSendMessage      = 0x5
+	AddressBPM              = 0xaa00
+	AddressPPQN             = 0xaa01
+	AddressMidiMessageStart = 0xaa02
+	AddressStatus           = 0xaa02
+	AddressData1            = 0xaa03
+	AddressData2            = 0xaa04
+	AddressSendMessage      = 0xaa05
 )
 
 var midiNoteIncludeTemplateText = `
