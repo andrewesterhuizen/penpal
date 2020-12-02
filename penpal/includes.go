@@ -2,7 +2,7 @@ package penpal
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 )
 
 const (
@@ -14,6 +14,26 @@ const (
 	AddressData2            = 0x4
 	AddressSendMessage      = 0x5
 )
+
+var midiNoteIncludeTemplateText = `
+{{ range $key, $value := . }}
+#define MIDI_NOTE_{{ $key }} {{ $value | printf "0x%02x" -}}
+{{ end }}
+`
+var midiNoteIncludeTemplateData = map[string]int{
+	"C1":  24,
+	"C#1": 25,
+	"D1":  26,
+	"D#1": 27,
+	"E":   28,
+	"F":   29,
+	"F#":  30,
+	"G":   31,
+	"G#":  32,
+	"A1":  33,
+	"A#1": 34,
+	"B1":  35,
+}
 
 var midiIncludeTemplateText = `
 #define MIDI_ADDRESS_BPM {{.AddressBPM | printf "0x%04x"}} 
@@ -68,32 +88,47 @@ midi_trig:
     RET
 `
 
+var midiIncludeIncludeData = map[string]int{
+	"AddressBPM":         AddressBPM,
+	"AddressPPQN":        AddressPPQN,
+	"AddressStatus":      AddressStatus,
+	"AddressData1":       AddressData1,
+	"AddressData2":       AddressData2,
+	"AddressSendMessage": AddressSendMessage,
+}
+
+func getIncludeTemplate(name string, templateText string, data interface{}) (string, error) {
+	buf := bytes.Buffer{}
+
+	midiIncludeTemplate, err := template.New(name).Parse(templateText)
+	if err != nil {
+		return "", err
+	}
+
+	err = midiIncludeTemplate.Execute(&buf, data)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
 func GetSystemIncludes() (map[string]string, error) {
 	var includes = map[string]string{}
 
-	buf := bytes.Buffer{}
-
-	midiTemplate, err := template.New("midi_include").Parse(midiIncludeTemplateText)
+	midiInlude, err := getIncludeTemplate("<midi>", midiIncludeTemplateText, midiIncludeIncludeData)
 	if err != nil {
 		return nil, err
 	}
 
-	data := map[string]int{
-		"AddressBPM":         AddressBPM,
-		"AddressPPQN":        AddressPPQN,
-		"AddressStatus":      AddressStatus,
-		"AddressData1":       AddressData1,
-		"AddressData2":       AddressData2,
-		"AddressSendMessage": AddressSendMessage,
-	}
-	err = midiTemplate.Execute(&buf, data)
+	includes["midi"] = midiInlude
+
+	notesInclude, err := getIncludeTemplate("<notes>", midiNoteIncludeTemplateText, midiNoteIncludeTemplateData)
 	if err != nil {
 		return nil, err
 	}
 
-	midiInclude := buf.String()
-
-	includes["midi"] = midiInclude
+	includes["notes"] = notesInclude
 
 	return includes, nil
 }
