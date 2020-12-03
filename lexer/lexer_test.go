@@ -10,8 +10,8 @@ type TestCase struct {
 }
 
 var testCases = []TestCase{
-	TestCase{input: "MOV A 0xab", output: []Token{newInstructionToken("MOV", newArgs("A", "0xab"))}},
-	TestCase{input: "JUMP 0xabcd", output: []Token{newInstructionToken("JUMP", newArgs("0xabcd"))}},
+	TestCase{input: "mov A 0xab", output: []Token{newInstructionToken("mov", newArgs("A", "0xab"))}},
+	TestCase{input: "jump 0xabcd", output: []Token{newInstructionToken("jump", newArgs("0xabcd"))}},
 	TestCase{input: "#define TEST 0xbc", output: []Token{newDefineToken("TEST", newArgs("0xbc"))}},
 	TestCase{input: "#include \"test.asm\"", output: []Token{newFileIncludeToken("test.asm")}},
 	TestCase{input: "#include <test>", output: []Token{newSystemIncludeToken("test")}},
@@ -19,33 +19,33 @@ var testCases = []TestCase{
 	TestCase{input: "__test:", output: []Token{newLabelToken("__test")}},
 	TestCase{
 		input: `
-			MOVA 0xa
-			MOVB 0xfa`,
+			movA 0xa
+			movB 0xfa`,
 		output: []Token{
-			newInstructionToken("MOVA", newArgs("0xa")),
-			newInstructionToken("MOVB", newArgs("0xfa")),
+			newInstructionToken("movA", newArgs("0xa")),
+			newInstructionToken("movB", newArgs("0xfa")),
 		},
 	},
 	TestCase{
 		input: `
 			#define TEST 0xfa
-			MOVA 0xa
-			MOVB TEST`,
+			movA 0xa
+			movB TEST`,
 		output: []Token{
 			newDefineToken("TEST", newArgs("0xfa")),
-			newInstructionToken("MOVA", newArgs("0xa")),
-			newInstructionToken("MOVB", newArgs("TEST")),
+			newInstructionToken("movA", newArgs("0xa")),
+			newInstructionToken("movB", newArgs("TEST")),
 		},
 	},
 	TestCase{
 		input: `
 			test:
-				MOVA 0ec
-				JUMP test`,
+				movA 0ec
+				jump test`,
 		output: []Token{
 			newLabelToken("test"),
-			newInstructionToken("MOVA", newArgs("0ec")),
-			newInstructionToken("JUMP", newArgs("test")),
+			newInstructionToken("movA", newArgs("0ec")),
+			newInstructionToken("jump", newArgs("test")),
 		},
 	},
 }

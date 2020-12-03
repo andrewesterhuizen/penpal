@@ -1,29 +1,29 @@
 package instructions
 
 const (
-	HALT = iota
-	MOV
-	SWAP
-	LOAD
-	STORE
-	ADD
-	SUB
-	MUL
-	DIV
-	SHL
-	SHR
-	AND
-	OR
-	JUMP
-	JUMPZ
-	JUMPNZ
-	PUSH
-	POP
-	CALL
-	RET
-	RETI
-	RAND
-	DB
+	Halt = iota
+	Mov
+	Swap
+	Load
+	Store
+	Add
+	Sub
+	Mul
+	Div
+	Shl
+	Shr
+	And
+	Or
+	Jump
+	Jumpz
+	Jumpnz
+	Push
+	Pop
+	Call
+	Ret
+	Reti
+	Rand
+	Db
 
 	Value                       = 0x0
 	Register                    = 0x1
@@ -37,81 +37,81 @@ const (
 )
 
 var Names = map[uint8]string{
-	MOV:    "MOV",
-	SWAP:   "SWAP",
-	HALT:   "HALT",
-	LOAD:   "LOAD",
-	STORE:  "STORE",
-	ADD:    "ADD",
-	SUB:    "SUB",
-	MUL:    "MUL",
-	DIV:    "DIV",
-	SHL:    "SHL",
-	SHR:    "SHR",
-	AND:    "AND",
-	OR:     "OR",
-	JUMP:   "JUMP",
-	JUMPZ:  "JUMPZ",
-	JUMPNZ: "JUMPNZ",
-	PUSH:   "PUSH",
-	POP:    "POP",
-	CALL:   "CALL",
-	RET:    "RET",
-	RETI:   "RETI",
-	RAND:   "RAND",
-	DB:     "DB",
+	Mov:    "mov",
+	Swap:   "swap",
+	Halt:   "halt",
+	Load:   "load",
+	Store:  "store",
+	Add:    "add",
+	Sub:    "sub",
+	Mul:    "mul",
+	Div:    "div",
+	Shl:    "shl",
+	Shr:    "shr",
+	And:    "and",
+	Or:     "or",
+	Jump:   "jump",
+	Jumpz:  "jumpz",
+	Jumpnz: "jumpnz",
+	Push:   "push",
+	Pop:    "pop",
+	Call:   "call",
+	Ret:    "ret",
+	Reti:   "reti",
+	Rand:   "rand",
+	Db:     "db",
 }
 
 var InstructionByName = map[string]uint8{
-	"MOV":    MOV,
-	"SWAP":   SWAP,
-	"HALT":   HALT,
-	"LOAD":   LOAD,
-	"STORE":  STORE,
-	"ADD":    ADD,
-	"SUB":    SUB,
-	"MUL":    MUL,
-	"DIV":    DIV,
-	"SHL":    SHL,
-	"SHR":    SHR,
-	"AND":    AND,
-	"OR":     OR,
-	"JUMP":   JUMP,
-	"JUMPZ":  JUMPZ,
-	"JUMPNZ": JUMPNZ,
-	"PUSH":   PUSH,
-	"POP":    POP,
-	"CALL":   CALL,
-	"RET":    RET,
-	"RETI":   RETI,
-	"RAND":   RAND,
-	"DB":     DB,
+	"mov":    Mov,
+	"swap":   Swap,
+	"halt":   Halt,
+	"load":   Load,
+	"store":  Store,
+	"add":    Add,
+	"sub":    Sub,
+	"mul":    Mul,
+	"div":    Div,
+	"shl":    Shl,
+	"shr":    Shr,
+	"and":    And,
+	"or":     Or,
+	"jump":   Jump,
+	"jumpz":  Jumpz,
+	"jumpnz": Jumpnz,
+	"push":   Push,
+	"pop":    Pop,
+	"call":   Call,
+	"ret":    Ret,
+	"reti":   Reti,
+	"rand":   Rand,
+	"db":     Db,
 }
 
 var Width = map[uint8]int{
-	MOV:    4,
-	SWAP:   1,
-	HALT:   1,
-	LOAD:   5,
-	STORE:  5,
-	ADD:    1,
-	SUB:    1,
-	MUL:    1,
-	DIV:    1,
-	SHL:    1,
-	SHR:    1,
-	AND:    1,
-	OR:     1,
-	JUMP:   3,
-	JUMPZ:  3,
-	JUMPNZ: 3,
-	PUSH:   3,
-	POP:    1,
-	CALL:   3,
-	RET:    1,
-	RETI:   1,
-	RAND:   1,
-	DB:     1,
+	Mov:    4,
+	Swap:   1,
+	Halt:   1,
+	Load:   5,
+	Store:  5,
+	Add:    1,
+	Sub:    1,
+	Mul:    1,
+	Div:    1,
+	Shl:    1,
+	Shr:    1,
+	And:    1,
+	Or:     1,
+	Jump:   3,
+	Jumpz:  3,
+	Jumpnz: 3,
+	Push:   3,
+	Pop:    1,
+	Call:   3,
+	Ret:    1,
+	Reti:   1,
+	Rand:   1,
+	Db:     1,
 }
 
 var RegistersByName = map[string]uint8{

@@ -15,161 +15,161 @@ type TestCase struct {
 }
 
 var instructionTestCases = []TestCase{
-	{input: "MOV A 0xab", output: []uint8{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterA, 0xab}},
-	{input: "MOV A +1(fp)", output: []uint8{instructions.MOV, instructions.AddressingModeFPRelative, instructions.RegisterA, 0x1}},
-	{input: "MOV A -1(fp)", output: []uint8{instructions.MOV, instructions.AddressingModeFPRelative, instructions.RegisterA, 0xff}},
-	{input: "MOV B 0xcd", output: []uint8{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterB, 0xcd}},
-	{input: "SWAP", output: []uint8{instructions.SWAP}},
+	{input: "mov A 0xab", output: []uint8{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterA, 0xab}},
+	{input: "mov A +1(fp)", output: []uint8{instructions.Mov, instructions.AddressingModeFPRelative, instructions.RegisterA, 0x1}},
+	{input: "mov A -1(fp)", output: []uint8{instructions.Mov, instructions.AddressingModeFPRelative, instructions.RegisterA, 0xff}},
+	{input: "mov B 0xcd", output: []uint8{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterB, 0xcd}},
+	{input: "swap", output: []uint8{instructions.Swap}},
 
-	// LOAD dest src
-	{input: "LOAD 0xae", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
-	{input: "LOAD 0xaecd", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
-	{input: "LOAD A 0xae", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
-	{input: "LOAD A 0xaecd", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
-	{input: "LOAD B 0xae", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterB, 0x00, 0xae}},
-	{input: "LOAD B 0xaecd", output: []uint8{instructions.LOAD, instructions.Register, instructions.RegisterB, 0xae, 0xcd}},
-	{input: "LOAD +1(fp) 0xae", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0x1, 0x00, 0xae}},
-	{input: "LOAD +1(fp) 0xaecd", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0x1, 0xae, 0xcd}},
-	{input: "LOAD -1(fp) 0xae", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0xff, 0x00, 0xae}},
-	{input: "LOAD -1(fp) 0xaecd", output: []uint8{instructions.LOAD, instructions.FramePointerRelativeAddress, 0xff, 0xae, 0xcd}},
+	// load dest src
+	{input: "load 0xae", output: []uint8{instructions.Load, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "load 0xaecd", output: []uint8{instructions.Load, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
+	{input: "load A 0xae", output: []uint8{instructions.Load, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "load A 0xaecd", output: []uint8{instructions.Load, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
+	{input: "load B 0xae", output: []uint8{instructions.Load, instructions.Register, instructions.RegisterB, 0x00, 0xae}},
+	{input: "load B 0xaecd", output: []uint8{instructions.Load, instructions.Register, instructions.RegisterB, 0xae, 0xcd}},
+	{input: "load +1(fp) 0xae", output: []uint8{instructions.Load, instructions.FramePointerRelativeAddress, 0x1, 0x00, 0xae}},
+	{input: "load +1(fp) 0xaecd", output: []uint8{instructions.Load, instructions.FramePointerRelativeAddress, 0x1, 0xae, 0xcd}},
+	{input: "load -1(fp) 0xae", output: []uint8{instructions.Load, instructions.FramePointerRelativeAddress, 0xff, 0x00, 0xae}},
+	{input: "load -1(fp) 0xaecd", output: []uint8{instructions.Load, instructions.FramePointerRelativeAddress, 0xff, 0xae, 0xcd}},
 
-	// STORE src dest
-	{input: "STORE 0xae", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
-	{input: "STORE 0xaecd", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
-	{input: "STORE A 0xae", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
-	{input: "STORE B 0xaecd", output: []uint8{instructions.STORE, instructions.Register, instructions.RegisterB, 0xae, 0xcd}},
-	{input: "STORE +1(fp) 0xae", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0x1, 0x00, 0xae}},
-	{input: "STORE +1(fp) 0xaecd", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0x1, 0xae, 0xcd}},
-	{input: "STORE -1(fp) 0xae", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0xff, 0x00, 0xae}},
-	{input: "STORE -1(fp) 0xaecd", output: []uint8{instructions.STORE, instructions.FramePointerRelativeAddress, 0xff, 0xae, 0xcd}},
+	// store src dest
+	{input: "store 0xae", output: []uint8{instructions.Store, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "store 0xaecd", output: []uint8{instructions.Store, instructions.Register, instructions.RegisterA, 0xae, 0xcd}},
+	{input: "store A 0xae", output: []uint8{instructions.Store, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+	{input: "store B 0xaecd", output: []uint8{instructions.Store, instructions.Register, instructions.RegisterB, 0xae, 0xcd}},
+	{input: "store +1(fp) 0xae", output: []uint8{instructions.Store, instructions.FramePointerRelativeAddress, 0x1, 0x00, 0xae}},
+	{input: "store +1(fp) 0xaecd", output: []uint8{instructions.Store, instructions.FramePointerRelativeAddress, 0x1, 0xae, 0xcd}},
+	{input: "store -1(fp) 0xae", output: []uint8{instructions.Store, instructions.FramePointerRelativeAddress, 0xff, 0x00, 0xae}},
+	{input: "store -1(fp) 0xaecd", output: []uint8{instructions.Store, instructions.FramePointerRelativeAddress, 0xff, 0xae, 0xcd}},
 
-	{input: "POP", output: []uint8{instructions.POP}},
-	{input: "PUSH", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterA}},
-	{input: "PUSH A", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterA}},
-	{input: "PUSH B", output: []uint8{instructions.PUSH, instructions.Register, instructions.RegisterB}},
-	{input: "PUSH 0xbd", output: []uint8{instructions.PUSH, instructions.Value, 0xbd}},
-	{input: "PUSH +1(fp)", output: []uint8{instructions.PUSH, instructions.FramePointerRelativeAddress, 0x1}},
-	{input: "PUSH -1(fp)", output: []uint8{instructions.PUSH, instructions.FramePointerRelativeAddress, 0xff}},
-	{input: "CALL 0xbeaf", output: []uint8{instructions.CALL, 0xbe, 0xaf}},
-	{input: "RET", output: []uint8{instructions.RET}},
-	{input: "RETI", output: []uint8{instructions.RETI}},
-	{input: "ADD", output: []uint8{instructions.ADD}},
-	{input: "SUB", output: []uint8{instructions.SUB}},
-	{input: "MUL", output: []uint8{instructions.MUL}},
-	{input: "DIV", output: []uint8{instructions.DIV}},
-	{input: "SHL", output: []uint8{instructions.SHL}},
-	{input: "SHR", output: []uint8{instructions.SHR}},
-	{input: "AND", output: []uint8{instructions.AND}},
-	{input: "OR", output: []uint8{instructions.OR}},
-	{input: "HALT", output: []uint8{instructions.HALT}},
-	{input: "RAND", output: []uint8{instructions.RAND}},
-	{input: "DB 0xeb", output: []uint8{0xeb}},
-	{input: "JUMP 0xcd", output: []uint8{instructions.JUMP, 0x00, 0xcd}},
-	{input: "JUMP 0xaecd", output: []uint8{instructions.JUMP, 0xae, 0xcd}},
-	{input: "JUMPZ 0xcd", output: []uint8{instructions.JUMPZ, 0x00, 0xcd}},
-	{input: "JUMPZ 0xaecd", output: []uint8{instructions.JUMPZ, 0xae, 0xcd}},
-	{input: "JUMPNZ 0xcd", output: []uint8{instructions.JUMPNZ, 0x00, 0xcd}},
-	{input: "JUMPNZ 0xaecd", output: []uint8{instructions.JUMPNZ, 0xae, 0xcd}},
-	{input: "#define TEST 0xbc\nMOV A TEST\n", output: []uint8{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterA, 0xbc}},
-	{input: "#define TEST 0xabcd\nMOV A TEST\n", output: []uint8{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterA, 0xcd}},
-	{input: "#define TEST 0xbc\nMOV A TEST\n", output: []uint8{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterA, 0xbc}},
-	{input: "#define TEST 0xabcd\nMOV A TEST\n", output: []uint8{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterA, 0xcd}},
-	{input: "#define TEST 0xbc\nCALL TEST\n", output: []uint8{instructions.CALL, 0x0, 0xbc}},
-	{input: "#define TEST 0xabcd\nCALL TEST\n", output: []uint8{instructions.CALL, 0xab, 0xcd}},
-	{input: "#define TEST 0xbc\nJUMP TEST\n", output: []uint8{instructions.JUMP, 0x0, 0xbc}},
-	{input: "#define TEST 0xabcd\nJUMP TEST\n", output: []uint8{instructions.JUMP, 0xab, 0xcd}},
-	{input: "#define TEST 0xbc\nJUMPZ TEST\n", output: []uint8{instructions.JUMPZ, 0x0, 0xbc}},
-	{input: "#define TEST 0xabcd\nJUMPZ TEST\n", output: []uint8{instructions.JUMPZ, 0xab, 0xcd}},
-	{input: "#define TEST 0xbc\nJUMPNZ TEST\n", output: []uint8{instructions.JUMPNZ, 0x0, 0xbc}},
-	{input: "#define TEST 0xabcd\nJUMPNZ TEST\n", output: []uint8{instructions.JUMPNZ, 0xab, 0xcd}},
+	{input: "pop", output: []uint8{instructions.Pop}},
+	{input: "push", output: []uint8{instructions.Push, instructions.Register, instructions.RegisterA}},
+	{input: "push A", output: []uint8{instructions.Push, instructions.Register, instructions.RegisterA}},
+	{input: "push B", output: []uint8{instructions.Push, instructions.Register, instructions.RegisterB}},
+	{input: "push 0xbd", output: []uint8{instructions.Push, instructions.Value, 0xbd}},
+	{input: "push +1(fp)", output: []uint8{instructions.Push, instructions.FramePointerRelativeAddress, 0x1}},
+	{input: "push -1(fp)", output: []uint8{instructions.Push, instructions.FramePointerRelativeAddress, 0xff}},
+	{input: "call 0xbeaf", output: []uint8{instructions.Call, 0xbe, 0xaf}},
+	{input: "ret", output: []uint8{instructions.Ret}},
+	{input: "reti", output: []uint8{instructions.Reti}},
+	{input: "add", output: []uint8{instructions.Add}},
+	{input: "sub", output: []uint8{instructions.Sub}},
+	{input: "mul", output: []uint8{instructions.Mul}},
+	{input: "div", output: []uint8{instructions.Div}},
+	{input: "shl", output: []uint8{instructions.Shl}},
+	{input: "shr", output: []uint8{instructions.Shr}},
+	{input: "and", output: []uint8{instructions.And}},
+	{input: "or", output: []uint8{instructions.Or}},
+	{input: "halt", output: []uint8{instructions.Halt}},
+	{input: "rand", output: []uint8{instructions.Rand}},
+	{input: "db 0xeb", output: []uint8{0xeb}},
+	{input: "jump 0xcd", output: []uint8{instructions.Jump, 0x00, 0xcd}},
+	{input: "jump 0xaecd", output: []uint8{instructions.Jump, 0xae, 0xcd}},
+	{input: "jumpz 0xcd", output: []uint8{instructions.Jumpz, 0x00, 0xcd}},
+	{input: "jumpz 0xaecd", output: []uint8{instructions.Jumpz, 0xae, 0xcd}},
+	{input: "jumpnz 0xcd", output: []uint8{instructions.Jumpnz, 0x00, 0xcd}},
+	{input: "jumpnz 0xaecd", output: []uint8{instructions.Jumpnz, 0xae, 0xcd}},
+	{input: "#define TEST 0xbc\nmov A TEST\n", output: []uint8{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterA, 0xbc}},
+	{input: "#define TEST 0xabcd\nmov A TEST\n", output: []uint8{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterA, 0xcd}},
+	{input: "#define TEST 0xbc\nmov A TEST\n", output: []uint8{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterA, 0xbc}},
+	{input: "#define TEST 0xabcd\nmov A TEST\n", output: []uint8{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterA, 0xcd}},
+	{input: "#define TEST 0xbc\ncall TEST\n", output: []uint8{instructions.Call, 0x0, 0xbc}},
+	{input: "#define TEST 0xabcd\ncall TEST\n", output: []uint8{instructions.Call, 0xab, 0xcd}},
+	{input: "#define TEST 0xbc\njump TEST\n", output: []uint8{instructions.Jump, 0x0, 0xbc}},
+	{input: "#define TEST 0xabcd\njump TEST\n", output: []uint8{instructions.Jump, 0xab, 0xcd}},
+	{input: "#define TEST 0xbc\njumpz TEST\n", output: []uint8{instructions.Jumpz, 0x0, 0xbc}},
+	{input: "#define TEST 0xabcd\njumpz TEST\n", output: []uint8{instructions.Jumpz, 0xab, 0xcd}},
+	{input: "#define TEST 0xbc\njumpnz TEST\n", output: []uint8{instructions.Jumpnz, 0x0, 0xbc}},
+	{input: "#define TEST 0xabcd\njumpnz TEST\n", output: []uint8{instructions.Jumpnz, 0xab, 0xcd}},
 	{input: "test:", output: []uint8{}},
 	{input: `
 	test:
-		SWAP
+		swap
 
-	JUMP test
+	jump test
 	`,
-		output: []uint8{instructions.SWAP, instructions.JUMP, 0x0, 0x0},
+		output: []uint8{instructions.Swap, instructions.Jump, 0x0, 0x0},
 	},
 	{input: `
-	JUMP test
+	jump test
 
 	test:
-		SWAP
+		swap
 	`,
-		output: []uint8{instructions.JUMP, 0x0, 0x3, instructions.SWAP},
+		output: []uint8{instructions.Jump, 0x0, 0x3, instructions.Swap},
 	},
 	{input: `
-	CALL label
-	HALT
+	call label
+	halt
 
 	label:
-		RET
+		ret
 	`,
-		output: []uint8{instructions.CALL, 0x0, 0x4, instructions.HALT, instructions.RET},
+		output: []uint8{instructions.Call, 0x0, 0x4, instructions.Halt, instructions.Ret},
 	},
 	{
 		input: `
 			#include "testfile.asm"
 
-			HALT`,
-		output: []uint8{instructions.SWAP, instructions.HALT},
-		files:  map[string]string{"testfile.asm": `SWAP`},
+			halt`,
+		output: []uint8{instructions.Swap, instructions.Halt},
+		files:  map[string]string{"testfile.asm": `swap`},
 	},
 	{
 		input: `
 			#include "testfile.asm"
 
-			HALT`,
-		output: []uint8{instructions.SHL, instructions.SHR, instructions.ADD, instructions.HALT},
+			halt`,
+		output: []uint8{instructions.Shl, instructions.Shr, instructions.Add, instructions.Halt},
 		files: map[string]string{
-			"testfile.asm":  "#include \"testfile2.asm\"\nADD\n",
-			"testfile2.asm": "SHL\nSHR\n",
+			"testfile.asm":  "#include \"testfile2.asm\"\nadd\n",
+			"testfile2.asm": "shl\nshr\n",
 		},
 	},
 	{
 		input: `
 			#include <test>
 
-			HALT`,
-		output:         []uint8{instructions.SUB, instructions.HALT},
-		systemIncludes: map[string]string{"test": `SUB`},
+			halt`,
+		output:         []uint8{instructions.Sub, instructions.Halt},
+		systemIncludes: map[string]string{"test": `sub`},
 	},
 	{
 		input: `
 			#include <test>
 
-			HALT`,
-		output: []uint8{instructions.SHL, instructions.SHR, instructions.ADD, instructions.HALT},
+			halt`,
+		output: []uint8{instructions.Shl, instructions.Shr, instructions.Add, instructions.Halt},
 		systemIncludes: map[string]string{
-			"test":  "#include <test2>\nADD\n",
-			"test2": "SHL\nSHR\n",
+			"test":  "#include <test2>\nadd\n",
+			"test2": "shl\nshr\n",
 		},
 	},
 	{
 		input: `
 			#include <test>
 
-			HALT`,
-		output: []uint8{instructions.SHL, instructions.SHR, instructions.ADD, instructions.HALT},
+			halt`,
+		output: []uint8{instructions.Shl, instructions.Shr, instructions.Add, instructions.Halt},
 		files: map[string]string{
-			"testfile.asm": "SHL\nSHR\n",
+			"testfile.asm": "shl\nshr\n",
 		},
 		systemIncludes: map[string]string{
-			"test": "#include \"testfile.asm\"\nADD\n",
+			"test": "#include \"testfile.asm\"\nadd\n",
 		},
 	},
 	{
 		input: `
 				#include "testfile.asm"
 	
-				HALT`,
-		output: []uint8{instructions.MUL, instructions.SUB, instructions.HALT},
+				halt`,
+		output: []uint8{instructions.Mul, instructions.Sub, instructions.Halt},
 		files: map[string]string{
-			"testfile.asm": "#include <test>\nSUB",
+			"testfile.asm": "#include <test>\nsub",
 		},
 		systemIncludes: map[string]string{
-			"test": "MUL\n",
+			"test": "mul\n",
 		},
 	},
 }
@@ -222,7 +222,7 @@ func TestInstructions(t *testing.T) {
 
 func TestAssembler_NoEntryPoint_ReturnsError(t *testing.T) {
 	a := New(Config{})
-	_, err := a.GetProgram("", "SWAP\n")
+	_, err := a.GetProgram("", "swap\n")
 
 	if err == nil {
 		t.Errorf("expected assembler to return error for source with no entry point")
@@ -243,10 +243,10 @@ func TestAssembler_getEntryPointTableBytes_returnsExpectedBytes(t *testing.T) {
 	}
 
 	expected := []byte{
-		instructions.JUMP, 0x12, 0x34,
-		instructions.JUMP, 0xab, 0xcd,
+		instructions.Jump, 0x12, 0x34,
+		instructions.Jump, 0xab, 0xcd,
 		0x0, 0x0, 0x0,
-		instructions.JUMP, 0xa1, 0xb2,
+		instructions.Jump, 0xa1, 0xb2,
 	}
 
 	for i, b := range expected {
@@ -259,13 +259,13 @@ func TestAssembler_getEntryPointTableBytes_returnsExpectedBytes(t *testing.T) {
 
 func TestAssembler_AddsEntryPointBytesAtExpectedLocation(t *testing.T) {
 	a := New(Config{})
-	program, _ := a.GetProgram("", "__start:HALT\n")
+	program, _ := a.GetProgram("", "__start:halt\n")
 
 	entryPoint := EntryPointsTableSize
 	eph := byte((entryPoint & 0xff00) >> 8)
 	epl := byte(entryPoint & 0xff)
 
-	if program[0] != instructions.JUMP || program[1] != eph || program[2] != epl {
+	if program[0] != instructions.Jump || program[1] != eph || program[2] != epl {
 		t.Errorf("expected assembler to add entry point bytes")
 	}
 }
@@ -285,7 +285,7 @@ func TestAssembler_MissingSystemInclude_ReturnsError(t *testing.T) {
 func TestAssembler_UndefinedLabel_ReturnsError(t *testing.T) {
 	a := New(Config{})
 
-	source := `JUMP undefined`
+	source := `jump undefined`
 
 	_, err := a.GetProgram("", source)
 
@@ -295,7 +295,7 @@ func TestAssembler_UndefinedLabel_ReturnsError(t *testing.T) {
 }
 
 func TestAssembler_EntryPointCorrectWithSystemInclude(t *testing.T) {
-	systemIncludes := map[string]string{"test": "SWAP\n"}
+	systemIncludes := map[string]string{"test": "swap\n"}
 	a := New(Config{
 		disableEntryPointsTable: false,
 		SystemIncludes:          systemIncludes,
@@ -305,7 +305,7 @@ func TestAssembler_EntryPointCorrectWithSystemInclude(t *testing.T) {
 	#include <test>
 
 	__start:
-    JUMP __start
+    jump __start
 `
 
 	program, err := a.GetProgram("", source)
@@ -315,7 +315,7 @@ func TestAssembler_EntryPointCorrectWithSystemInclude(t *testing.T) {
 
 	startIndex := EntryPointsTableSize + 1
 
-	if program[startIndex] != instructions.JUMP {
+	if program[startIndex] != instructions.Jump {
 		t.Errorf("incorrect entry point in header")
 	}
 

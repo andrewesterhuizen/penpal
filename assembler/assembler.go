@@ -158,7 +158,7 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 	instruction := t.Value
 
 	switch instruction {
-	case "MOV":
+	case "mov":
 		register := t.Args[0]
 		var dest uint8
 
@@ -168,7 +168,7 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 		case "B":
 			dest = instructions.RegisterB
 		default:
-			return fmt.Errorf("encountered unknown destination for MOV instruction: %s", register.Value)
+			return fmt.Errorf("encountered unknown destination for mov instruction: %s", register.Value)
 		}
 
 		arg2 := t.Args[1]
@@ -184,13 +184,13 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 			return err
 		}
 
-		a.appendInstructions(instructions.MOV, addressingMode, dest, v)
+		a.appendInstructions(instructions.Mov, addressingMode, dest, v)
 
-	case "SWAP":
-		a.appendInstruction(instructions.SWAP)
+	case "swap":
+		a.appendInstruction(instructions.Swap)
 
-	case "LOAD":
-		a.appendInstruction(instructions.LOAD)
+	case "load":
+		a.appendInstruction(instructions.Load)
 
 		if len(t.Args) == 2 {
 			arg0 := t.Args[0]
@@ -203,7 +203,7 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 				a.appendInstruction(register)
 
 			} else {
-				return fmt.Errorf("LOAD: encountered unknown operand type %v", arg0)
+				return fmt.Errorf("load: encountered unknown operand type %v", arg0)
 			}
 
 			err := a.addInstructionArgs16(t.Args[1], instruction)
@@ -219,12 +219,12 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 			}
 		}
 
-	case "POP":
-		a.appendInstruction(instructions.POP)
+	case "pop":
+		a.appendInstruction(instructions.Pop)
 
-	case "PUSH":
+	case "push":
 		if len(t.Args) == 1 {
-			a.appendInstruction(instructions.PUSH)
+			a.appendInstruction(instructions.Push)
 			arg := t.Args[0]
 
 			if arg.IsRegister {
@@ -239,13 +239,13 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 			}
 
 		} else {
-			a.appendInstruction(instructions.PUSH)
+			a.appendInstruction(instructions.Push)
 			a.appendInstruction(instructions.Register)
 			a.appendInstruction(instructions.RegisterA)
 		}
 
-	case "STORE":
-		a.appendInstruction(instructions.STORE)
+	case "store":
+		a.appendInstruction(instructions.Store)
 
 		if len(t.Args) == 2 {
 			arg0 := t.Args[0]
@@ -258,7 +258,7 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 				a.appendInstruction(register)
 
 			} else {
-				return fmt.Errorf("STORE: encountered unknown operand type %v", arg0)
+				return fmt.Errorf("store: encountered unknown operand type %v", arg0)
 			}
 
 			err := a.addInstructionArgs16(t.Args[1], instruction)
@@ -274,38 +274,38 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 			}
 		}
 
-	case "ADD":
-		a.appendInstruction(instructions.ADD)
+	case "add":
+		a.appendInstruction(instructions.Add)
 
-	case "SUB":
-		a.appendInstruction(instructions.SUB)
+	case "sub":
+		a.appendInstruction(instructions.Sub)
 
-	case "MUL":
-		a.appendInstruction(instructions.MUL)
+	case "mul":
+		a.appendInstruction(instructions.Mul)
 
-	case "DIV":
-		a.appendInstruction(instructions.DIV)
+	case "div":
+		a.appendInstruction(instructions.Div)
 
-	case "SHL":
-		a.appendInstruction(instructions.SHL)
+	case "shl":
+		a.appendInstruction(instructions.Shl)
 
-	case "SHR":
-		a.appendInstruction(instructions.SHR)
+	case "shr":
+		a.appendInstruction(instructions.Shr)
 
-	case "AND":
-		a.appendInstruction(instructions.AND)
+	case "and":
+		a.appendInstruction(instructions.And)
 
-	case "OR":
-		a.appendInstruction(instructions.OR)
+	case "or":
+		a.appendInstruction(instructions.Or)
 
-	case "HALT":
-		a.appendInstruction(instructions.HALT)
+	case "halt":
+		a.appendInstruction(instructions.Halt)
 
-	case "RAND":
-		a.appendInstruction(instructions.RAND)
+	case "rand":
+		a.appendInstruction(instructions.Rand)
 
-	case "JUMP":
-		a.appendInstruction(instructions.JUMP)
+	case "jump":
+		a.appendInstruction(instructions.Jump)
 		if len(t.Args) < 1 {
 			return fmt.Errorf("expected 1 operand for instruction")
 		}
@@ -313,31 +313,31 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 		if err != nil {
 			return err
 		}
-	case "JUMPZ":
-		a.appendInstruction(instructions.JUMPZ)
+	case "jumpz":
+		a.appendInstruction(instructions.Jumpz)
 		err := a.addInstructionArgs16(t.Args[0], instruction)
 		if err != nil {
 			return err
 		}
-	case "JUMPNZ":
-		a.appendInstruction(instructions.JUMPNZ)
+	case "jumpnz":
+		a.appendInstruction(instructions.Jumpnz)
 		err := a.addInstructionArgs16(t.Args[0], instruction)
 		if err != nil {
 			return err
 		}
-	case "CALL":
-		a.appendInstruction(instructions.CALL)
+	case "call":
+		a.appendInstruction(instructions.Call)
 		err := a.addInstructionArgs16(t.Args[0], instruction)
 		if err != nil {
 			return err
 		}
-	case "RET":
-		a.appendInstruction(instructions.RET)
+	case "ret":
+		a.appendInstruction(instructions.Ret)
 
-	case "RETI":
-		a.appendInstruction(instructions.RETI)
+	case "reti":
+		a.appendInstruction(instructions.Reti)
 
-	case "DB":
+	case "db":
 		a.appendInstruction(t.Args[0].AsUint8())
 
 	default:
@@ -520,13 +520,13 @@ func (a *Assembler) getEntryPointTableBytes() ([]byte, error) {
 	}
 
 	// entry point
-	buf.WriteByte(instructions.JUMP)
+	buf.WriteByte(instructions.Jump)
 	binary.Write(&buf, binary.BigEndian, entryPointAddress)
 
 	for _, label := range a.config.InteruptLabels {
 		labelAddress, exists := a.labels[label]
 		if exists {
-			buf.WriteByte(instructions.JUMP)
+			buf.WriteByte(instructions.Jump)
 			binary.Write(&buf, binary.BigEndian, labelAddress)
 		} else {
 			buf.Write([]byte{0, 0, 0})

@@ -164,11 +164,11 @@ func (vm *VM) Interupt(n int) {
 
 func (vm *VM) execute(instruction uint8) {
 	switch instruction {
-	case instructions.SWAP:
+	case instructions.Swap:
 		vm.a, vm.b = vm.b, vm.a
 		vm.ip++
 
-	case instructions.MOV:
+	case instructions.Mov:
 		mode := vm.fetch()
 		register := vm.fetch()
 
@@ -180,7 +180,7 @@ func (vm *VM) execute(instruction uint8) {
 		case instructions.RegisterB:
 			dest = &vm.b
 		default:
-			log.Fatalf("encountered unknown destination for MOV, 0x%02x", register)
+			log.Fatalf("encountered unknown destination for mov, 0x%02x", register)
 		}
 
 		switch mode {
@@ -192,12 +192,12 @@ func (vm *VM) execute(instruction uint8) {
 			v := vm.memory[addr]
 			*dest = v
 		default:
-			log.Fatalf("encountered unknown addressing mode for MOV, 0x%02x", mode)
+			log.Fatalf("encountered unknown addressing mode for mov, 0x%02x", mode)
 		}
 
 		vm.ip++
 
-	case instructions.STORE:
+	case instructions.Store:
 		mode := vm.fetch()
 		modeArg := vm.fetch()
 
@@ -214,18 +214,18 @@ func (vm *VM) execute(instruction uint8) {
 			case instructions.RegisterB:
 				value = vm.b
 			default:
-				log.Fatalf("STORE: encountered unknown register source 0x%02x", mode)
+				log.Fatalf("store: encountered unknown register source 0x%02x", mode)
 			}
 
 		default:
-			log.Fatalf("STORE: encountered unknown addressing mode 0x%02x", mode)
+			log.Fatalf("store: encountered unknown addressing mode 0x%02x", mode)
 		}
 
 		addr := vm.fetch16()
 		vm.memory[addr] = value
 		vm.ip++
 
-	case instructions.LOAD:
+	case instructions.Load:
 		mode := vm.fetch()
 		modeArg := vm.fetch()
 
@@ -242,52 +242,52 @@ func (vm *VM) execute(instruction uint8) {
 			case instructions.RegisterB:
 				vm.b = vm.memory[srcAddr]
 			default:
-				log.Fatalf("LOAD: encountered unknown register source 0x%02x", mode)
+				log.Fatalf("load: encountered unknown register source 0x%02x", mode)
 			}
 
 		default:
-			log.Fatalf("LOAD: encountered unknown addressing mode 0x%02x", mode)
+			log.Fatalf("load: encountered unknown addressing mode 0x%02x", mode)
 		}
 
 		vm.ip++
 
-	case instructions.ADD:
+	case instructions.Add:
 		vm.a += vm.b
 		vm.ip++
 
-	case instructions.SUB:
+	case instructions.Sub:
 		vm.a -= vm.b
 		vm.ip++
 
-	case instructions.MUL:
+	case instructions.Mul:
 		vm.a *= vm.b
 		vm.ip++
 
-	case instructions.DIV:
+	case instructions.Div:
 		vm.a /= vm.b
 		vm.ip++
 
-	case instructions.SHL:
+	case instructions.Shl:
 		vm.a = vm.a << vm.b
 		vm.ip++
 
-	case instructions.SHR:
+	case instructions.Shr:
 		vm.a = vm.a >> vm.b
 		vm.ip++
 
-	case instructions.AND:
+	case instructions.And:
 		vm.a = vm.a & vm.b
 		vm.ip++
 
-	case instructions.OR:
+	case instructions.Or:
 		vm.a = vm.a | vm.b
 		vm.ip++
 
-	case instructions.JUMP:
+	case instructions.Jump:
 		addr := vm.fetch16()
 		vm.ip = addr
 
-	case instructions.JUMPZ:
+	case instructions.Jumpz:
 		addr := vm.fetch16()
 		if vm.a == 0 {
 			vm.ip = addr
@@ -295,7 +295,7 @@ func (vm *VM) execute(instruction uint8) {
 			vm.ip++
 		}
 
-	case instructions.JUMPNZ:
+	case instructions.Jumpnz:
 		addr := vm.fetch16()
 		if vm.a != 0 {
 			vm.ip = addr
@@ -303,7 +303,7 @@ func (vm *VM) execute(instruction uint8) {
 			vm.ip++
 		}
 
-	case instructions.PUSH:
+	case instructions.Push:
 		mode := vm.fetch()
 		value := vm.fetch()
 
@@ -315,7 +315,7 @@ func (vm *VM) execute(instruction uint8) {
 			case instructions.RegisterB:
 				vm.push(vm.b)
 			default:
-				log.Fatalf("PUSH: encountered unknown register 0x%02x\n", value)
+				log.Fatalf("push: encountered unknown register 0x%02x\n", value)
 			}
 		case instructions.FramePointerRelativeAddress:
 			addr := vm.getFramePointerRelativeAddress(int8(value))
@@ -323,27 +323,27 @@ func (vm *VM) execute(instruction uint8) {
 		case instructions.Value:
 			vm.push(value)
 		default:
-			log.Fatalf("PUSH: encountered unknown mode 0x%02x\n", mode)
+			log.Fatalf("push: encountered unknown mode 0x%02x\n", mode)
 		}
 
 		vm.ip++
 
-	case instructions.POP:
+	case instructions.Pop:
 		vm.a = vm.pop()
 		vm.ip++
 
-	case instructions.CALL:
+	case instructions.Call:
 		addr := vm.fetch16()
 		vm.call(addr)
 
-	case instructions.RET:
+	case instructions.Ret:
 		vm.ret()
 		vm.ip++
 
-	case instructions.RETI:
+	case instructions.Reti:
 		vm.retFromInterupt()
 
-	case instructions.RAND:
+	case instructions.Rand:
 		vm.a = uint8(rand.Intn(255))
 		vm.ip++
 
@@ -393,7 +393,7 @@ func (vm *VM) PrintMem(start uint16, n uint16) {
 }
 
 func (vm *VM) Tick() {
-	if vm.memory[vm.ip] == instructions.HALT {
+	if vm.memory[vm.ip] == instructions.Halt {
 		vm.Halted = true
 		return
 	}

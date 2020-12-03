@@ -1,18 +1,18 @@
 #include <midi>
 
 __start:
-    MOV A 0x80
-    STORE A MIDI_ADDRESS_BPM
-    MOV A 0x2
-    STORE A MIDI_ADDRESS_PPQN
+    mov A 0x80
+    store A MIDI_ADDRESS_BPM
+    mov A 0x2
+    store A MIDI_ADDRESS_PPQN
 loop:
-    JUMP loop
+    jump loop
 
 on_tick: 
-    RAND
-    MOV B 0x3C
-    AND
-    PUSH A
-    PUSH 0x1
-    CALL midi_trig
-    RETI
+    rand
+    mov B 0x3C
+    and
+    push A
+    push 0x1
+    call midi_trig
+    reti

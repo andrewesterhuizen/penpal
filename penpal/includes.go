@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-// TODO: these are just random addresses, these should be changed to labels to DBs in the include
+// TODO: these are just random addresses, these should be changed to labels to dbs in the include
 const (
 	AddressBPM              = 0xaa00
 	AddressPPQN             = 0xaa01
@@ -47,46 +47,46 @@ var midiIncludeTemplateText = `
 // args: (status, data1, data2)
 midi_send_message:
 	// status
-	STORE +7(fp) MIDI_ADDRESS_STATUS
+	store +7(fp) MIDI_ADDRESS_STATUS
 	// data1
-	STORE +8(fp) MIDI_ADDRESS_DATA1
+	store +8(fp) MIDI_ADDRESS_DATA1
 	// data2
-	STORE +9(fp) MIDI_ADDRESS_DATA2
+	store +9(fp) MIDI_ADDRESS_DATA2
 
 	// set send byte
-	MOV A 0x1
-	STORE A MIDI_ADDRESS_SEND_MESSAGE
+	mov A 0x1
+	store A MIDI_ADDRESS_SEND_MESSAGE
 
-	RET
+	ret
 
 // args: (note)
 midi_trig:
 	// send note on
 
 	// data2 (velocity)
-	PUSH 0x7F
+	push 0x7F
 	// data1 (note)
-	PUSH +7(fp)
+	push +7(fp)
 	// status (0x90/note on)
-	PUSH 0x90
+	push 0x90
 	// number of args
-	PUSH 0x3
-	CALL midi_send_message
+	push 0x3
+	call midi_send_message
 
 	
 	// send note off
 
 	// data2 (velocity)
-	PUSH 0x63
+	push 0x63
 	// data1 (note)
-    PUSH +7(fp)
+    push +7(fp)
 	// status (0x80/note off)
-	PUSH 0x80
+	push 0x80
 	// number of args
-    PUSH 0x3
-    CALL midi_send_message
+    push 0x3
+    call midi_send_message
 
-    RET
+    ret
 `
 
 var midiIncludeIncludeData = map[string]int{

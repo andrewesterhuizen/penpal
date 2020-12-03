@@ -8,12 +8,12 @@ import (
 )
 
 func (p *Parser) parseAdd() error {
-	p.appendInstruction(instructions.ADD)
+	p.appendInstruction(instructions.Add)
 	return p.accept(lexer_rewrite.TokenTypeNewLine)
 }
 
 func (p *Parser) parseMove() error {
-	p.appendInstruction(instructions.MOV)
+	p.appendInstruction(instructions.Mov)
 
 	var mode uint8
 	var value byte

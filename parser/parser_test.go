@@ -18,7 +18,7 @@ var parserTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "add"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.ADD}},
+	}, output: []byte{instructions.Add}},
 	{input: []lexer_rewrite.Token{ // move 0xab, A
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "move"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xab"},
@@ -26,7 +26,7 @@ var parserTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.MOV, instructions.AddressingModeImmediate, instructions.RegisterA, 0xab}},
+	}, output: []byte{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterA, 0xab}},
 	{input: []lexer_rewrite.Token{ // move (fp+1), A
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "move"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeLeftParen, Value: "("},
@@ -38,7 +38,7 @@ var parserTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.MOV, instructions.AddressingModeFPRelative, instructions.RegisterA, 0x1}},
+	}, output: []byte{instructions.Mov, instructions.AddressingModeFPRelative, instructions.RegisterA, 0x1}},
 	{input: []lexer_rewrite.Token{ // move (fp-1), A
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "move"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeLeftParen, Value: "("},
@@ -50,7 +50,7 @@ var parserTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.MOV, instructions.AddressingModeFPRelative, instructions.RegisterA, 0xff}},
+	}, output: []byte{instructions.Mov, instructions.AddressingModeFPRelative, instructions.RegisterA, 0xff}},
 }
 
 func TestParser(t *testing.T) {
