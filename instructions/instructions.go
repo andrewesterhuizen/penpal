@@ -23,6 +23,7 @@ const (
 	RET
 	RETI
 	RAND
+	DB
 
 	Value                       = 0x0
 	Register                    = 0x1
@@ -58,6 +59,7 @@ var Names = map[uint8]string{
 	RET:    "RET",
 	RETI:   "RETI",
 	RAND:   "RAND",
+	DB:     "DB",
 }
 
 var InstructionByName = map[string]uint8{
@@ -83,6 +85,7 @@ var InstructionByName = map[string]uint8{
 	"RET":    RET,
 	"RETI":   RETI,
 	"RAND":   RAND,
+	"DB":     DB,
 }
 
 var Width = map[uint8]int{
@@ -108,6 +111,7 @@ var Width = map[uint8]int{
 	RET:    1,
 	RETI:   1,
 	RAND:   1,
+	DB:     1,
 }
 
 var RegistersByName = map[string]uint8{

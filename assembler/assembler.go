@@ -337,6 +337,9 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 	case "RETI":
 		a.appendInstruction(instructions.RETI)
 
+	case "DB":
+		a.appendInstruction(t.Args[0].AsUint8())
+
 	default:
 		return fmt.Errorf("encountered unknown instruction %s", instruction)
 	}
