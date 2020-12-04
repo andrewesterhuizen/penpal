@@ -111,11 +111,13 @@ var testCases = []testCase{
 		},
 	},
 	{
-		"#include \"test\"\n",
+		"#include \"test.asm\"\n",
 		[]Token{
 			newToken(TokenTypeInclude, "#include"),
 			newToken(TokenTypeDoubleQuote, "\""),
 			newToken(TokenTypeText, "test"),
+			newToken(TokenTypeDot, "."),
+			newToken(TokenTypeText, "asm"),
 			newToken(TokenTypeDoubleQuote, "\""),
 			newToken(TokenTypeNewLine, "\n"),
 			newToken(TokenTypeEndOfFile, ""),

@@ -22,6 +22,7 @@ const (
 	TokenTypeComma
 	TokenTypeColon
 	TokenTypeDoubleQuote
+	TokenTypeDot
 	TokenTypeAngleBracketLeft
 	TokenTypeAngleBracketRight
 	TokenTypeLabel
@@ -59,6 +60,8 @@ func (t TokenType) String() string {
 		return "Colon"
 	case TokenTypeDoubleQuote:
 		return "DoubleQuote"
+	case TokenTypeDot:
+		return "Dot"
 	case TokenTypeAngleBracketLeft:
 		return "AngleBracketLeft"
 	case TokenTypeAngleBracketRight:
@@ -169,6 +172,9 @@ func (l *Lexer) Run() ([]Token, error) {
 		case r == '"':
 			l.pos++
 			l.addToken(TokenTypeDoubleQuote)
+		case r == '.':
+			l.pos++
+			l.addToken(TokenTypeDot)
 		case r == '<':
 			l.pos++
 			l.addToken(TokenTypeAngleBracketLeft)
@@ -178,8 +184,11 @@ func (l *Lexer) Run() ([]Token, error) {
 		case r == ' ':
 			// skip
 			l.pos++
+		case r == '\t':
+			// skip
+			l.pos++
 		default:
-			return nil, fmt.Errorf("encountered unexpected rune %v", string(r))
+			return nil, fmt.Errorf("encountered unexpected rune '%v' (%d)", string(r), r)
 		}
 
 		if l.pos >= len(l.input) {
