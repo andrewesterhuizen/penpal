@@ -12,7 +12,7 @@ func (p *Parser) parseAdd() error {
 	return p.accept(lexer_rewrite.TokenTypeNewLine)
 }
 
-func (p *Parser) parseMove() error {
+func (p *Parser) parseMov() error {
 	p.appendInstruction(instructions.Mov)
 
 	var mode uint8

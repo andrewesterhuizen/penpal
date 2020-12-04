@@ -67,8 +67,8 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 	switch t.Value {
 	case "add":
 		return p.parseAdd()
-	case "move":
-		return p.parseMove()
+	case "mov":
+		return p.parseMov()
 	default:
 		return fmt.Errorf("unexpected instruction %v", t.Value)
 	}

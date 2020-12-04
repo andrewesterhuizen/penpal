@@ -19,16 +19,16 @@ var parserTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
 	}, output: []byte{instructions.Add}},
-	{input: []lexer_rewrite.Token{ // move 0xab, A
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "move"},
+	{input: []lexer_rewrite.Token{ // mov 0xab, A
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xab"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeComma},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
 	}, output: []byte{instructions.Mov, instructions.AddressingModeImmediate, instructions.RegisterA, 0xab}},
-	{input: []lexer_rewrite.Token{ // move (fp+1), A
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "move"},
+	{input: []lexer_rewrite.Token{ // mov (fp+1), A
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeLeftParen, Value: "("},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "fp"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypePlus, Value: "+"},
@@ -39,8 +39,8 @@ var parserTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
 	}, output: []byte{instructions.Mov, instructions.AddressingModeFPRelative, instructions.RegisterA, 0x1}},
-	{input: []lexer_rewrite.Token{ // move (fp-1), A
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "move"},
+	{input: []lexer_rewrite.Token{ // mov (fp-1), A
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeLeftParen, Value: "("},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "fp"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeMinus, Value: "-"},
@@ -54,7 +54,6 @@ var parserTestCases = []parserTestCase{
 }
 
 func TestParser(t *testing.T) {
-
 	for _, tc := range parserTestCases {
 		p := NewParser()
 		p.Load(tc.input)
