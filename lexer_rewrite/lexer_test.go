@@ -17,6 +17,7 @@ type testCase struct {
 var testCases = []testCase{
 	{"add\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"add 5\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"add 0xbb\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0xbb"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"add 0x5f\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0x5f"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"add 0b101\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0b101"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"mov 23\n", []Token{newToken(TokenTypeText, "mov"), newToken(TokenTypeInteger, "23"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},

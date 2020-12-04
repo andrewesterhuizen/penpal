@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/andrewesterhuizen/penpal/instructions"
 	"github.com/andrewesterhuizen/penpal/lexer_rewrite"
 )
 
@@ -36,7 +37,7 @@ func parseIntegerToken(t lexer_rewrite.Token) (uint64, error) {
 	return n, nil
 }
 
-func (p *Parser) appendInstruction(i byte) {
+func (p *Parser) addByte(i byte) {
 	p.instructions = append(p.instructions, i)
 }
 
@@ -45,7 +46,7 @@ func (p *Parser) nextToken() lexer_rewrite.Token {
 	return p.tokens[p.index]
 }
 
-func (p *Parser) accept(t lexer_rewrite.TokenType) error {
+func (p *Parser) expect(t lexer_rewrite.TokenType) error {
 	n := p.nextToken()
 	if n.Type != t {
 		return fmt.Errorf("expected %v and got %v", t, n.Type)
@@ -54,7 +55,7 @@ func (p *Parser) accept(t lexer_rewrite.TokenType) error {
 	return nil
 }
 
-func (p *Parser) expect(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) {
+func (p *Parser) expectAndGet(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) {
 	n := p.nextToken()
 	if n.Type != t {
 		return n, fmt.Errorf("expected %v and got %v", t, n.Type)
@@ -65,8 +66,36 @@ func (p *Parser) expect(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) 
 
 func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 	switch t.Value {
+	case "swap":
+		return p.parseNoOperandInstruction(instructions.Swap)
+	case "pop":
+		return p.parseNoOperandInstruction(instructions.Pop)
+	case "ret":
+		return p.parseNoOperandInstruction(instructions.Ret)
+	case "reti":
+		return p.parseNoOperandInstruction(instructions.Reti)
 	case "add":
-		return p.parseAdd()
+		return p.parseArithmeticLogicInstruction(instructions.Add)
+	case "sub":
+		return p.parseArithmeticLogicInstruction(instructions.Sub)
+	case "mul":
+		return p.parseArithmeticLogicInstruction(instructions.Mul)
+	case "div":
+		return p.parseArithmeticLogicInstruction(instructions.Div)
+	case "shl":
+		return p.parseArithmeticLogicInstruction(instructions.Shl)
+	case "shr":
+		return p.parseArithmeticLogicInstruction(instructions.Shr)
+	case "and":
+		return p.parseArithmeticLogicInstruction(instructions.And)
+	case "or":
+		return p.parseArithmeticLogicInstruction(instructions.Or)
+	case "rand":
+		return p.parseArithmeticLogicInstruction(instructions.Rand)
+	case "halt":
+		return p.parseNoOperandInstruction(instructions.Halt)
+	case "load":
+		return p.parseLoad()
 	case "mov":
 		return p.parseMov()
 	default:
@@ -85,7 +114,7 @@ func (p *Parser) parseToken(t lexer_rewrite.Token) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("error parsing (%s) instruction: %w", t.Value, err)
+		return fmt.Errorf("error parsing \"%s\" instruction: %w", t.Value, err)
 	}
 
 	return nil
