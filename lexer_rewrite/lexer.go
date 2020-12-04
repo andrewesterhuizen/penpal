@@ -10,6 +10,8 @@ const (
 	TokenTypeEndOfFile TokenType = iota
 	TokenTypeNewLine
 	TokenTypeText
+	TokenTypeDefine
+	TokenTypeInclude
 	TokenTypeInteger
 	TokenTypePlus
 	TokenTypeMinus
@@ -19,6 +21,9 @@ const (
 	TokenTypeRightBracket
 	TokenTypeComma
 	TokenTypeColon
+	TokenTypeDoubleQuote
+	TokenTypeAngleBracketLeft
+	TokenTypeAngleBracketRight
 	TokenTypeLabel
 )
 
@@ -52,8 +57,18 @@ func (t TokenType) String() string {
 		return "Comma"
 	case TokenTypeColon:
 		return "Colon"
+	case TokenTypeDoubleQuote:
+		return "DoubleQuote"
+	case TokenTypeAngleBracketLeft:
+		return "AngleBracketLeft"
+	case TokenTypeAngleBracketRight:
+		return "AngleBracketRight"
 	case TokenTypeLabel:
 		return "Label"
+	case TokenTypeDefine:
+		return "Define"
+	case TokenTypeInclude:
+		return "Include"
 	default:
 		return "Unknown"
 	}
@@ -107,6 +122,23 @@ func (l *Lexer) Run() ([]Token, error) {
 			l.lexInteger()
 		case isAlphaNumeric(r):
 			l.lexText()
+
+		case r == '#':
+			nr := l.peek()
+			l.pos++
+
+			switch nr {
+			case 'd':
+				// TODO: return single token instead of define + text tokens
+				// #define test = 0xaa => {type: Define, value: "test" }
+				l.lexDefine()
+			case 'i':
+				// TODO: return single token instead of define + text tokens
+				// #include "test" / <test> => {type: Include/SystemInclude, value: "test" }
+				l.lexInclude()
+			default:
+				return nil, fmt.Errorf("unexpected next rune %v", string(r))
+			}
 		case r == '\n':
 			l.pos++
 			l.addToken(TokenTypeNewLine)
@@ -134,6 +166,15 @@ func (l *Lexer) Run() ([]Token, error) {
 		case r == '-':
 			l.pos++
 			l.addToken(TokenTypeMinus)
+		case r == '"':
+			l.pos++
+			l.addToken(TokenTypeDoubleQuote)
+		case r == '<':
+			l.pos++
+			l.addToken(TokenTypeAngleBracketLeft)
+		case r == '>':
+			l.pos++
+			l.addToken(TokenTypeAngleBracketRight)
 		case r == ' ':
 			// skip
 			l.pos++
@@ -152,7 +193,22 @@ func (l *Lexer) Run() ([]Token, error) {
 
 func (l *Lexer) next() rune {
 	l.pos++
+
+	if l.pos >= len(l.input) {
+		return eof
+	}
+
 	return rune(l.input[l.pos])
+}
+
+func (l *Lexer) peek() rune {
+	nextPos := l.pos + 1
+
+	if nextPos >= len(l.input) {
+		return eof
+	}
+
+	return rune(l.input[nextPos])
 }
 
 func (l *Lexer) addToken(tokenType TokenType) {
@@ -176,6 +232,28 @@ func (l *Lexer) lexText() {
 	}
 
 	l.addToken(TokenTypeText)
+	return
+}
+
+func (l *Lexer) lexDefine() {
+	r := rune(l.input[l.pos])
+
+	for isAlphaNumeric(r) {
+		r = l.next()
+	}
+
+	l.addToken(TokenTypeDefine)
+	return
+}
+
+func (l *Lexer) lexInclude() {
+	r := rune(l.input[l.pos])
+
+	for isAlphaNumeric(r) {
+		r = l.next()
+	}
+
+	l.addToken(TokenTypeInclude)
 	return
 }
 

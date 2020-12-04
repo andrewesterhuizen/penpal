@@ -19,12 +19,12 @@ var testCases = []testCase{
 	{"add 5\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"add 0x5f\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0x5f"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"add 0b101\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0b101"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"move 23\n", []Token{newToken(TokenTypeText, "move"), newToken(TokenTypeInteger, "23"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"move label\n", []Token{newToken(TokenTypeText, "move"), newToken(TokenTypeText, "label"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"mov 23\n", []Token{newToken(TokenTypeText, "mov"), newToken(TokenTypeInteger, "23"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"mov label\n", []Token{newToken(TokenTypeText, "mov"), newToken(TokenTypeText, "label"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{
-		"move 11, A\n",
+		"mov 11, A\n",
 		[]Token{
-			newToken(TokenTypeText, "move"),
+			newToken(TokenTypeText, "mov"),
 			newToken(TokenTypeInteger, "11"),
 			newToken(TokenTypeComma, ","),
 			newToken(TokenTypeText, "A"),
@@ -34,9 +34,9 @@ var testCases = []testCase{
 	},
 	{"label:\n", []Token{newToken(TokenTypeLabel, "label"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{
-		"move (fp)\n",
+		"mov (fp)\n",
 		[]Token{
-			newToken(TokenTypeText, "move"),
+			newToken(TokenTypeText, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "fp"),
 			newToken(TokenTypeRightParen, ")"),
@@ -45,9 +45,9 @@ var testCases = []testCase{
 		},
 	},
 	{
-		"move (label[3])\n",
+		"mov (label[3])\n",
 		[]Token{
-			newToken(TokenTypeText, "move"),
+			newToken(TokenTypeText, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "label"),
 			newToken(TokenTypeLeftBracket, "["),
@@ -59,9 +59,9 @@ var testCases = []testCase{
 		},
 	},
 	{
-		"move (fp+1)\n",
+		"mov (fp+1)\n",
 		[]Token{
-			newToken(TokenTypeText, "move"),
+			newToken(TokenTypeText, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "fp"),
 			newToken(TokenTypePlus, "+"),
@@ -72,9 +72,9 @@ var testCases = []testCase{
 		},
 	},
 	{
-		"move (fp+1), B\n",
+		"mov (fp+1), B\n",
 		[]Token{
-			newToken(TokenTypeText, "move"),
+			newToken(TokenTypeText, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "fp"),
 			newToken(TokenTypePlus, "+"),
@@ -87,15 +87,47 @@ var testCases = []testCase{
 		},
 	},
 	{
-		"move A, 67\nadd 13\n",
+		"mov A, 67\nadd 13\n",
 		[]Token{
-			newToken(TokenTypeText, "move"),
+			newToken(TokenTypeText, "mov"),
 			newToken(TokenTypeText, "A"),
 			newToken(TokenTypeComma, ","),
 			newToken(TokenTypeInteger, "67"),
 			newToken(TokenTypeNewLine, "\n"),
 			newToken(TokenTypeText, "add"),
 			newToken(TokenTypeInteger, "13"),
+			newToken(TokenTypeNewLine, "\n"),
+			newToken(TokenTypeEndOfFile, ""),
+		},
+	},
+	{
+		"#define TEST 0xbc\n",
+		[]Token{
+			newToken(TokenTypeDefine, "#define"),
+			newToken(TokenTypeText, "TEST"),
+			newToken(TokenTypeInteger, "0xbc"),
+			newToken(TokenTypeNewLine, "\n"),
+			newToken(TokenTypeEndOfFile, ""),
+		},
+	},
+	{
+		"#include \"test\"\n",
+		[]Token{
+			newToken(TokenTypeInclude, "#include"),
+			newToken(TokenTypeDoubleQuote, "\""),
+			newToken(TokenTypeText, "test"),
+			newToken(TokenTypeDoubleQuote, "\""),
+			newToken(TokenTypeNewLine, "\n"),
+			newToken(TokenTypeEndOfFile, ""),
+		},
+	},
+	{
+		"#include <test>\n",
+		[]Token{
+			newToken(TokenTypeInclude, "#include"),
+			newToken(TokenTypeAngleBracketLeft, "<"),
+			newToken(TokenTypeText, "test"),
+			newToken(TokenTypeAngleBracketRight, ">"),
 			newToken(TokenTypeNewLine, "\n"),
 			newToken(TokenTypeEndOfFile, ""),
 		},
