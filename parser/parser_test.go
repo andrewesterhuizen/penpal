@@ -13,6 +13,10 @@ type parserTestCase struct {
 	output []byte
 }
 
+func tok(t lexer_rewrite.TokenType, v string) lexer_rewrite.Token {
+	return lexer_rewrite.Token{Type: t, Value: v}
+}
+
 func newBasicInstructionTestCase(text string, ins byte) parserTestCase {
 	input := []lexer_rewrite.Token{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: text},
@@ -61,7 +65,7 @@ var movTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Mov, 0xab, instructions.AddressingModeImmediate, instructions.RegisterA}},
+	}, output: []byte{instructions.Mov, instructions.AddressingModeImmediate, 0xab, instructions.RegisterA}},
 	{input: []lexer_rewrite.Token{
 		// mov fp, A
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
@@ -70,7 +74,7 @@ var movTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Mov, 0x0, instructions.AddressingModeFPRelative, instructions.RegisterA}},
+	}, output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x0, instructions.RegisterA}},
 	{input: []lexer_rewrite.Token{
 		// mov (fp+1), A
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
@@ -83,7 +87,7 @@ var movTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Mov, 0x1, instructions.AddressingModeFPRelative, instructions.RegisterA}},
+	}, output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x1, instructions.RegisterA}},
 	{input: []lexer_rewrite.Token{
 		// mov (fp-1), B
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
@@ -96,7 +100,7 @@ var movTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "B"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Mov, 0xff, instructions.AddressingModeFPRelative, instructions.RegisterB}},
+	}, output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0xff, instructions.RegisterB}},
 	{input: []lexer_rewrite.Token{
 		// mov (fp[3]), B
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
@@ -110,7 +114,7 @@ var movTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "B"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Mov, 0x3, instructions.AddressingModeFPRelative, instructions.RegisterB}},
+	}, output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x3, instructions.RegisterB}},
 	{input: []lexer_rewrite.Token{
 		// mov (fp[+3]), A
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
@@ -125,7 +129,7 @@ var movTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Mov, 0x3, instructions.AddressingModeFPRelative, instructions.RegisterA}},
+	}, output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x3, instructions.RegisterA}},
 	{input: []lexer_rewrite.Token{
 		// mov (fp[-3]), A
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "mov"},
@@ -140,29 +144,190 @@ var movTestCases = []parserTestCase{
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine, Value: "\n"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Mov, 0xfd, instructions.AddressingModeFPRelative, instructions.RegisterA}},
+	}, output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0xfd, instructions.RegisterA}},
 }
 
+// TODO:
+// load label, A           (A = memory[label])
+// load (label + A), A     (A = memory[label + A])
+// load (label - A), A     (A = memory[label - A])
+// load (label + 5), A     (A = memory[label + 5])
+// load (label - 5), A     (A = memory[label - 5])
+// load (label[5]), A      (A = memory[label + 5])
+
+// load src (address|label), dest (register)
 var loadTestCases = []parserTestCase{
-	// load src (address|label), dest (register)
 	{input: []lexer_rewrite.Token{
 		// load 0xae, A
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "load"},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xae"},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeComma},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "A"},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Load, instructions.Register, instructions.RegisterA, 0x00, 0xae}},
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeInteger, "0xae"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0xae, instructions.Immediate, 0x0, instructions.RegisterA}},
 	{input: []lexer_rewrite.Token{
 		// load 0xaecd, B
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "load"},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xaecd"},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeComma},
-		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "B"},
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeInteger, "0xaecd"),
+		tok(lexer_rewrite.TokenTypeComma, ""),
+		tok(lexer_rewrite.TokenTypeText, "B"),
+		tok(lexer_rewrite.TokenTypeNewLine, ""),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0xae, 0xcd, instructions.Immediate, 0x0, instructions.RegisterB}},
+	{input: []lexer_rewrite.Token{
+		// load (fp + 5), A
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeLeftParen, "("),
+		tok(lexer_rewrite.TokenTypeText, "fp"),
+		tok(lexer_rewrite.TokenTypePlus, "+"),
+		tok(lexer_rewrite.TokenTypeInteger, "5"),
+		tok(lexer_rewrite.TokenTypeRightParen, ")"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x5, instructions.RegisterA}},
+	{input: []lexer_rewrite.Token{
+		// load (fp + 5), A
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeLeftParen, "("),
+		tok(lexer_rewrite.TokenTypeText, "fp"),
+		tok(lexer_rewrite.TokenTypePlus, "+"),
+		tok(lexer_rewrite.TokenTypeInteger, "5"),
+		tok(lexer_rewrite.TokenTypeRightParen, ")"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x5, instructions.RegisterA}},
+	{input: []lexer_rewrite.Token{
+		// load (fp[5]), A
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeLeftParen, "("),
+		tok(lexer_rewrite.TokenTypeText, "fp"),
+		tok(lexer_rewrite.TokenTypeLeftBracket, "["),
+		tok(lexer_rewrite.TokenTypeInteger, "5"),
+		tok(lexer_rewrite.TokenTypeRightBracket, "]"),
+		tok(lexer_rewrite.TokenTypeRightParen, ")"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x5, instructions.RegisterA}},
+	{input: []lexer_rewrite.Token{
+		// load (fp[-1]), B
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeLeftParen, "("),
+		tok(lexer_rewrite.TokenTypeText, "fp"),
+		tok(lexer_rewrite.TokenTypeLeftBracket, "["),
+		tok(lexer_rewrite.TokenTypeMinus, "-"),
+		tok(lexer_rewrite.TokenTypeInteger, "1"),
+		tok(lexer_rewrite.TokenTypeRightBracket, "]"),
+		tok(lexer_rewrite.TokenTypeRightParen, ")"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "B"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0xff, instructions.RegisterB}},
+	{input: []lexer_rewrite.Token{
+		// load (fp - A), A
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeLeftParen, "("),
+		tok(lexer_rewrite.TokenTypeText, "fp"),
+		tok(lexer_rewrite.TokenTypeMinus, "-"),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeRightParen, ")"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerMinusRegister, instructions.RegisterA, instructions.RegisterA}},
+	{input: []lexer_rewrite.Token{
+		//  load (fp - 1), A
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeLeftParen, "("),
+		tok(lexer_rewrite.TokenTypeText, "fp"),
+		tok(lexer_rewrite.TokenTypeMinus, "-"),
+		tok(lexer_rewrite.TokenTypeInteger, "1"),
+		tok(lexer_rewrite.TokenTypeRightParen, ")"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0xff, instructions.RegisterA}},
+	{input: []lexer_rewrite.Token{
+		//  load fp, A
+		tok(lexer_rewrite.TokenTypeText, "load"),
+		tok(lexer_rewrite.TokenTypeText, "fp"),
+		tok(lexer_rewrite.TokenTypeComma, ","),
+		tok(lexer_rewrite.TokenTypeText, "A"),
+		tok(lexer_rewrite.TokenTypeNewLine, "\n"),
+		tok(lexer_rewrite.TokenTypeEndOfFile, ""),
+	}, output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x0, instructions.RegisterA}},
+}
+
+// TODO: labels
+var callTestCases = []parserTestCase{
+	{input: []lexer_rewrite.Token{
+		// call 0xba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "call"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xba"},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
 		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
-	}, output: []byte{instructions.Load, instructions.Register, instructions.RegisterB, 0xae, 0xcd}},
+	}, output: []byte{instructions.Call, 0x00, 0xba}},
+	{input: []lexer_rewrite.Token{
+		// call 0xcdba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "call"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xcdba"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
+	}, output: []byte{instructions.Call, 0xcd, 0xba}},
+}
+
+var jumpTestCases = []parserTestCase{
+	{input: []lexer_rewrite.Token{
+		// jump 0xba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "jump"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xba"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
+	}, output: []byte{instructions.Jump, 0x00, 0xba}},
+	{input: []lexer_rewrite.Token{
+		// jump 0xcdba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "jump"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xcdba"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
+	}, output: []byte{instructions.Jump, 0xcd, 0xba}},
+	{input: []lexer_rewrite.Token{
+		// jump 0xba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "jumpz"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xba"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
+	}, output: []byte{instructions.Jumpz, 0x00, 0xba}},
+	{input: []lexer_rewrite.Token{
+		// jump 0xcdba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "jumpz"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xcdba"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
+	}, output: []byte{instructions.Jumpz, 0xcd, 0xba}},
+	{input: []lexer_rewrite.Token{
+		// jump 0xba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "jumpnz"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xba"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
+	}, output: []byte{instructions.Jumpnz, 0x00, 0xba}},
+	{input: []lexer_rewrite.Token{
+		// jump 0xcdba
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: "jumpnz"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInteger, Value: "0xcdba"},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeNewLine},
+		lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile},
+	}, output: []byte{instructions.Jumpnz, 0xcd, 0xba}},
 }
 
 func TestParser(t *testing.T) {
@@ -178,8 +343,13 @@ func TestParser(t *testing.T) {
 	parserTestCases = append(parserTestCases, newALTests("shl", instructions.Shl)...)
 	parserTestCases = append(parserTestCases, newALTests("shr", instructions.Shr)...)
 	parserTestCases = append(parserTestCases, newALTests("rand", instructions.Rand)...)
+	parserTestCases = append(parserTestCases, newALTests("push", instructions.Push)...)
 
+	parserTestCases = append(parserTestCases, singleOperandInstructionTestCases...)
 	parserTestCases = append(parserTestCases, movTestCases...)
+	parserTestCases = append(parserTestCases, callTestCases...)
+	parserTestCases = append(parserTestCases, jumpTestCases...)
+	parserTestCases = append(parserTestCases, loadTestCases...)
 
 	for _, tc := range parserTestCases {
 		p := NewParser()

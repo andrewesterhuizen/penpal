@@ -204,7 +204,7 @@ func (vm *VM) execute(instruction uint8) {
 		var value byte
 
 		switch mode {
-		case instructions.FramePointerRelativeAddress:
+		case instructions.FramePointerWithOffset:
 			addr := vm.getFramePointerRelativeAddress(int8(modeArg))
 			value = vm.memory[addr]
 		case instructions.Register:
@@ -232,7 +232,7 @@ func (vm *VM) execute(instruction uint8) {
 		srcAddr := vm.fetch16()
 
 		switch mode {
-		case instructions.FramePointerRelativeAddress:
+		case instructions.FramePointerWithOffset:
 			addr := vm.getFramePointerRelativeAddress(int8(modeArg))
 			vm.memory[addr] = vm.memory[srcAddr]
 		case instructions.Register:
@@ -317,7 +317,7 @@ func (vm *VM) execute(instruction uint8) {
 			default:
 				log.Fatalf("push: encountered unknown register 0x%02x\n", value)
 			}
-		case instructions.FramePointerRelativeAddress:
+		case instructions.FramePointerWithOffset:
 			addr := vm.getFramePointerRelativeAddress(int8(value))
 			vm.push(vm.memory[addr])
 		case instructions.Value:

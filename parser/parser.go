@@ -46,6 +46,11 @@ func (p *Parser) nextToken() lexer_rewrite.Token {
 	return p.tokens[p.index]
 }
 
+func (p *Parser) backup() {
+	p.index--
+	return
+}
+
 func (p *Parser) expect(t lexer_rewrite.TokenType) error {
 	n := p.nextToken()
 	if n.Type != t {
@@ -74,6 +79,8 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 		return p.parseNoOperandInstruction(instructions.Ret)
 	case "reti":
 		return p.parseNoOperandInstruction(instructions.Reti)
+	case "push":
+		return p.parseArithmeticLogicInstruction(instructions.Push)
 	case "add":
 		return p.parseArithmeticLogicInstruction(instructions.Add)
 	case "sub":
@@ -94,6 +101,14 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 		return p.parseArithmeticLogicInstruction(instructions.Rand)
 	case "halt":
 		return p.parseNoOperandInstruction(instructions.Halt)
+	case "call":
+		return p.parseAddressInstruction(instructions.Call)
+	case "jump":
+		return p.parseAddressInstruction(instructions.Jump)
+	case "jumpz":
+		return p.parseAddressInstruction(instructions.Jumpz)
+	case "jumpnz":
+		return p.parseAddressInstruction(instructions.Jumpnz)
 	case "load":
 		return p.parseLoad()
 	case "mov":

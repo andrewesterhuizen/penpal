@@ -7,8 +7,41 @@ import (
 	"github.com/andrewesterhuizen/penpal/lexer_rewrite"
 )
 
+func getRegister(r string) (byte, error) {
+	switch r {
+	case "A":
+		return instructions.RegisterA, nil
+	case "B":
+		return instructions.RegisterB, nil
+	default:
+		return 0, fmt.Errorf("expected register and got %s", r)
+	}
+}
+
 func (p *Parser) parseNoOperandInstruction(instruction byte) error {
 	p.addByte(instruction)
+	return p.expect(lexer_rewrite.TokenTypeNewLine)
+}
+
+func (p *Parser) parseAddressInstruction(instruction byte) error {
+	p.addByte(instruction)
+
+	it, err := p.expectAndGet(lexer_rewrite.TokenTypeInteger)
+	if err != nil {
+		return err
+	}
+
+	i, err := parseIntegerToken(it)
+	if err != nil {
+		return err
+	}
+
+	h := (i & 0xff00) >> 8
+	l := i & 0xff
+
+	p.addByte(byte(h))
+	p.addByte(byte(l))
+
 	return p.expect(lexer_rewrite.TokenTypeNewLine)
 }
 
@@ -42,7 +75,130 @@ func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
 	return p.expect(lexer_rewrite.TokenTypeNewLine)
 }
 
-// encoding = mov, value, mode, dest
+func (p *Parser) parseOffsetAddress() (byte, byte, error) {
+	err := p.expect(lexer_rewrite.TokenTypeLeftParen)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	register, err := p.expectAndGet(lexer_rewrite.TokenTypeText)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	mode := byte(instructions.Immediate)
+	modeArg := byte(0)
+
+	switch register.Value {
+	case "fp":
+		mode = instructions.FramePointerWithOffset
+
+	default:
+		return 0, 0, fmt.Errorf("unexpected register \"%s\"", register.Value)
+	}
+
+	next := p.nextToken()
+
+	switch next.Type {
+	case lexer_rewrite.TokenTypePlus:
+		t := p.nextToken()
+
+		switch t.Type {
+		case lexer_rewrite.TokenTypeInteger:
+			n, err := parseIntegerToken(t)
+			if err != nil {
+				return 0, 0, err
+			}
+
+			modeArg = byte(n)
+		case lexer_rewrite.TokenTypeText:
+			reg, err := getRegister(t.Value)
+			if err != nil {
+				return 0, 0, err
+			}
+
+			mode = instructions.FramePointerPlusRegister
+			modeArg = byte(reg)
+
+		default:
+			return 0, 0, fmt.Errorf("unexpected token \"%s\"", t.Value)
+		}
+
+	case lexer_rewrite.TokenTypeMinus:
+		t := p.nextToken()
+
+		switch t.Type {
+		case lexer_rewrite.TokenTypeInteger:
+			n, err := parseIntegerToken(t)
+			if err != nil {
+				return 0, 0, err
+			}
+
+			nsigned := int8(n) * int8(-1)
+			modeArg = byte(nsigned)
+
+		case lexer_rewrite.TokenTypeText:
+			reg, err := getRegister(t.Value)
+			if err != nil {
+				return 0, 0, err
+			}
+
+			mode = instructions.FramePointerMinusRegister
+			modeArg = byte(reg)
+
+		default:
+			return 0, 0, fmt.Errorf("unexpected token \"%s\"", t.Value)
+		}
+
+	case lexer_rewrite.TokenTypeLeftBracket:
+		t := p.nextToken()
+
+		// default to +
+		operator := lexer_rewrite.TokenTypePlus
+
+		// valid next tokens are, +, - or the integer
+
+		// check if token is - for inverting later
+		if t.Type == lexer_rewrite.TokenTypeMinus {
+			operator = lexer_rewrite.TokenTypeMinus
+		}
+
+		// if current token isn't the integer then it must be the next token
+		if t.Type != lexer_rewrite.TokenTypeInteger {
+			t, err = p.expectAndGet(lexer_rewrite.TokenTypeInteger)
+			if err != nil {
+				return 0, 0, err
+			}
+		}
+
+		err = p.expect(lexer_rewrite.TokenTypeRightBracket)
+		if err != nil {
+			return 0, 0, err
+		}
+
+		n, err := parseIntegerToken(t)
+		if err != nil {
+			return 0, 0, err
+		}
+
+		if operator == lexer_rewrite.TokenTypeMinus {
+			nsigned := int8(n) * int8(-1)
+			modeArg = byte(nsigned)
+
+		} else {
+			modeArg = byte(n)
+		}
+
+	default:
+		return 0, 0, fmt.Errorf("unexpected token \"%s\"", next.Value)
+	}
+
+	p.expect(lexer_rewrite.TokenTypeRightParen)
+
+	return mode, modeArg, nil
+}
+
+// encoding =  mov, mode, value, dest
 func (p *Parser) parseMov() error {
 	p.addByte(instructions.Mov)
 
@@ -55,109 +211,28 @@ func (p *Parser) parseMov() error {
 			return err
 		}
 
+		p.addByte(instructions.Immediate)
 		p.addByte(byte(n))
-		p.addByte(instructions.AddressingModeImmediate)
 
 	case lexer_rewrite.TokenTypeLeftParen:
-		register, err := p.expectAndGet(lexer_rewrite.TokenTypeText)
+		p.backup()
+		mode, offset, err := p.parseOffsetAddress()
 		if err != nil {
 			return err
 		}
 
-		mode := byte(instructions.Immediate)
-
-		switch register.Value {
-		case "fp":
-			mode = instructions.AddressingModeFPRelative
-		default:
-			return fmt.Errorf("unexpected register \"%s\"", t.Value)
-		}
-
-		next := p.nextToken()
-
-		switch next.Type {
-		case lexer_rewrite.TokenTypePlus:
-			value, err := p.expectAndGet(lexer_rewrite.TokenTypeInteger)
-			if err != nil {
-				return err
-			}
-
-			n, err := parseIntegerToken(value)
-			if err != nil {
-				return err
-			}
-
-			p.addByte(byte(n))
-
-		case lexer_rewrite.TokenTypeMinus:
-			value, err := p.expectAndGet(lexer_rewrite.TokenTypeInteger)
-			if err != nil {
-				return err
-			}
-
-			n, err := parseIntegerToken(value)
-			if err != nil {
-				return err
-			}
-			nsigned := int8(n) * int8(-1)
-			p.addByte(byte(nsigned))
-
-		case lexer_rewrite.TokenTypeLeftBracket:
-			t := p.nextToken()
-
-			// default to +
-			operator := lexer_rewrite.TokenTypePlus
-
-			// valid next tokens here are, +, - or the integer
-
-			// check if token is - for inverting later
-			if t.Type == lexer_rewrite.TokenTypeMinus {
-				operator = lexer_rewrite.TokenTypeMinus
-			}
-
-			intToken := t
-
-			// if current token isn't the integer then it must be the next token
-			if t.Type != lexer_rewrite.TokenTypeInteger {
-				intToken, err = p.expectAndGet(lexer_rewrite.TokenTypeInteger)
-				if err != nil {
-					return err
-				}
-			}
-
-			err = p.expect(lexer_rewrite.TokenTypeRightBracket)
-			if err != nil {
-				return err
-			}
-
-			n, err := parseIntegerToken(intToken)
-			if err != nil {
-				return err
-			}
-
-			if operator == lexer_rewrite.TokenTypeMinus {
-				nsigned := int8(n) * int8(-1)
-				p.addByte(byte(nsigned))
-			} else {
-				p.addByte(byte(n))
-			}
-
-		default:
-			return fmt.Errorf("unexpected token \"%s\"", next.Value)
-		}
-
 		p.addByte(mode)
+		p.addByte(offset)
 
-		p.expect(lexer_rewrite.TokenTypeRightParen)
 	case lexer_rewrite.TokenTypeText:
 		switch t.Value {
 		case "fp":
 			// mov fp, A => (A = (fp+0))
+			p.addByte(instructions.FramePointerWithOffset)
 			p.addByte(0)
-			p.addByte(instructions.AddressingModeFPRelative)
 
 		default:
-			return fmt.Errorf("unexpected register \"%s\"", t.Value)
+			return fmt.Errorf("unknown register \"%s\"", t.Value)
 		}
 
 	default:
@@ -175,43 +250,62 @@ func (p *Parser) parseMov() error {
 		return fmt.Errorf("unexpected token %s", dest.Type)
 	}
 
-	switch dest.Value {
-	case "A":
-		p.addByte(instructions.RegisterA)
-	case "B":
-		p.addByte(instructions.RegisterB)
-	default:
-		return fmt.Errorf("expected register and got %s", dest.Value)
+	reg, err := getRegister(dest.Value)
+	if err != nil {
+		return err
 	}
+
+	p.addByte(reg)
 
 	return p.expect(lexer_rewrite.TokenTypeNewLine)
 }
 
-// load 0xae, A
-// instructions.Load, instructions.Register, instructions.RegisterA, 0x00, 0xae
+// load (fp + 5), A
+// instructionsLoad, addressh, addressl, mode, offset, dest reg
 func (p *Parser) parseLoad() error {
 	p.addByte(instructions.Load)
-
-	var mode uint8
-	var valueH byte
-	var valueL byte
 
 	t := p.nextToken()
 
 	switch t.Type {
 	case lexer_rewrite.TokenTypeInteger:
-		mode = instructions.Register
-		p.addByte(instructions.Register)
 
 		n, err := parseIntegerToken(t)
 		if err != nil {
 			return err
 		}
 
-		value := uint16(n)
+		addrH := byte((n & 0xff00) >> 8)
+		addrL := byte(n & 0xff)
 
-		valueH = byte((value & 0xff00) >> 8)
-		valueL = byte(value & 0xff)
+		p.addByte(addrH)
+		p.addByte(addrL)
+		p.addByte(instructions.Immediate)
+		p.addByte(0) // no offset
+
+	case lexer_rewrite.TokenTypeLeftParen:
+		p.backup()
+		mode, offset, err := p.parseOffsetAddress()
+		if err != nil {
+			return err
+		}
+
+		p.addByte(0)
+		p.addByte(0)
+		p.addByte(mode)
+		p.addByte(offset)
+
+	case lexer_rewrite.TokenTypeText:
+		switch t.Value {
+		case "fp":
+			p.addByte(0)
+			p.addByte(0)
+			p.addByte(instructions.FramePointerWithOffset)
+			p.addByte(0)
+
+		default:
+			return fmt.Errorf("unknown register \"%s\"", t.Value)
+		}
 
 	default:
 		return fmt.Errorf("unexpected token \"%s\"", t.Value)
@@ -228,23 +322,12 @@ func (p *Parser) parseLoad() error {
 		return fmt.Errorf("unexpected token %s", dest.Type)
 	}
 
-	switch dest.Value {
-	case "A":
-		p.addByte(instructions.RegisterA)
-	case "B":
-		p.addByte(instructions.RegisterB)
-	default:
-		return fmt.Errorf("expected register and got %s", dest.Value)
+	reg, err := getRegister(dest.Value)
+	if err != nil {
+		return err
 	}
 
-	switch mode {
-	case instructions.AddressingModeImmediate:
-		p.addByte(valueH)
-		p.addByte(valueL)
-	case instructions.AddressingModeFPRelative:
-		p.addByte(valueH)
-		p.addByte(valueL)
-	}
+	p.addByte(reg)
 
 	return p.expect(lexer_rewrite.TokenTypeNewLine)
 }

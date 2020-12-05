@@ -195,7 +195,7 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 		if len(t.Args) == 2 {
 			arg0 := t.Args[0]
 			if arg0.IsFPOffsetAddress {
-				a.appendInstruction(instructions.FramePointerRelativeAddress)
+				a.appendInstruction(instructions.FramePointerWithOffset)
 				a.appendInstruction(t.Args[0].AsUint8())
 			} else if arg0.IsRegister {
 				a.appendInstruction(instructions.Register)
@@ -231,7 +231,7 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 				a.appendInstruction(instructions.Register)
 				a.appendInstruction(instructions.RegistersByName[arg.Value])
 			} else if arg.IsFPOffsetAddress {
-				a.appendInstruction(instructions.FramePointerRelativeAddress)
+				a.appendInstruction(instructions.FramePointerWithOffset)
 				a.appendInstruction(arg.AsUint8())
 			} else {
 				a.appendInstruction(instructions.Value)
@@ -250,7 +250,7 @@ func (a *Assembler) addInstruction(t lexer.Token) error {
 		if len(t.Args) == 2 {
 			arg0 := t.Args[0]
 			if arg0.IsFPOffsetAddress {
-				a.appendInstruction(instructions.FramePointerRelativeAddress)
+				a.appendInstruction(instructions.FramePointerWithOffset)
 				a.appendInstruction(t.Args[0].AsUint8())
 			} else if arg0.IsRegister {
 				a.appendInstruction(instructions.Register)

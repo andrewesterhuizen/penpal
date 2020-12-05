@@ -25,10 +25,12 @@ const (
 	Rand
 	Db
 
-	Value                       = 0x0 // TODO: remove this one when it is no longer used
-	Immediate                   = 0x0
-	Register                    = 0x1
-	FramePointerRelativeAddress = 0x2
+	Value                     = 0x0 // TODO: remove this one when it is no longer used
+	Immediate                 = 0x0
+	Register                  = 0x1
+	FramePointerWithOffset    = 0x2
+	FramePointerPlusRegister  = 0x3
+	FramePointerMinusRegister = 0x4
 
 	RegisterA = 0x0
 	RegisterB = 0x1
