@@ -97,6 +97,18 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 		return p.parseArithmeticLogicInstruction(instructions.And)
 	case "or":
 		return p.parseArithmeticLogicInstruction(instructions.Or)
+	case "gt":
+		return p.parseArithmeticLogicInstruction(instructions.GT)
+	case "gte":
+		return p.parseArithmeticLogicInstruction(instructions.GTE)
+	case "lt":
+		return p.parseArithmeticLogicInstruction(instructions.LT)
+	case "lte":
+		return p.parseArithmeticLogicInstruction(instructions.LTE)
+	case "eq":
+		return p.parseArithmeticLogicInstruction(instructions.Eq)
+	case "neq":
+		return p.parseArithmeticLogicInstruction(instructions.Neq)
 	case "rand":
 		return p.parseArithmeticLogicInstruction(instructions.Rand)
 	case "halt":

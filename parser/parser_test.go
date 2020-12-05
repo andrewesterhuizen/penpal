@@ -30,7 +30,7 @@ func newBasicInstructionTestCase(text string, ins byte) parserTestCase {
 	}
 }
 
-func newALTests(text string, ins byte) []parserTestCase {
+func newAritmeticLogicInstructionTests(text string, ins byte) []parserTestCase {
 	return []parserTestCase{
 		{input: []lexer_rewrite.Token{
 			// ins
@@ -335,15 +335,20 @@ func TestParser(t *testing.T) {
 	// arithmetic and logic
 	// no operand = implied B register as value
 	// instruction, (immediate mode|register mode), (immediate value|register number)
-	parserTestCases = append(parserTestCases, newALTests("add", instructions.Add)...)
-	parserTestCases = append(parserTestCases, newALTests("sub", instructions.Sub)...)
-	parserTestCases = append(parserTestCases, newALTests("mul", instructions.Mul)...)
-	parserTestCases = append(parserTestCases, newALTests("div", instructions.Div)...)
-	parserTestCases = append(parserTestCases, newALTests("or", instructions.Or)...)
-	parserTestCases = append(parserTestCases, newALTests("shl", instructions.Shl)...)
-	parserTestCases = append(parserTestCases, newALTests("shr", instructions.Shr)...)
-	parserTestCases = append(parserTestCases, newALTests("rand", instructions.Rand)...)
-	parserTestCases = append(parserTestCases, newALTests("push", instructions.Push)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("add", instructions.Add)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("sub", instructions.Sub)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("mul", instructions.Mul)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("div", instructions.Div)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("or", instructions.Or)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("shl", instructions.Shl)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("shr", instructions.Shr)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("rand", instructions.Rand)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("gt", instructions.GT)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("gte", instructions.GTE)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("lt", instructions.LT)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("lte", instructions.LTE)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("eq", instructions.Eq)...)
+	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTests("neq", instructions.Neq)...)
 
 	parserTestCases = append(parserTestCases, singleOperandInstructionTestCases...)
 	parserTestCases = append(parserTestCases, movTestCases...)

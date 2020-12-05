@@ -14,6 +14,12 @@ const (
 	Shr
 	And
 	Or
+	GT
+	GTE
+	LT
+	LTE
+	Eq
+	Neq
 	Jump
 	Jumpz
 	Jumpnz
@@ -53,6 +59,12 @@ var Names = map[uint8]string{
 	Shr:    "shr",
 	And:    "and",
 	Or:     "or",
+	GT:     "gt",
+	GTE:    "gte",
+	LT:     "lt",
+	LTE:    "lte",
+	Eq:     "eq",
+	Neq:    "neq",
 	Jump:   "jump",
 	Jumpz:  "jumpz",
 	Jumpnz: "jumpnz",
@@ -79,6 +91,12 @@ var InstructionByName = map[string]uint8{
 	"shr":    Shr,
 	"and":    And,
 	"or":     Or,
+	"gt":     GT,
+	"gte":    GTE,
+	"lt":     LT,
+	"lte":    LTE,
+	"eq":     Eq,
+	"neq":    Neq,
 	"jump":   Jump,
 	"jumpz":  Jumpz,
 	"jumpnz": Jumpnz,
@@ -92,11 +110,12 @@ var InstructionByName = map[string]uint8{
 }
 
 var Width = map[uint8]int{
-	Mov:    4,
-	Swap:   1,
-	Halt:   1,
-	Load:   5,
-	Store:  5,
+	Mov:   4,
+	Swap:  1,
+	Halt:  1,
+	Load:  5,
+	Store: 5,
+	// TODO: all aritmetic/logic instructions will need to be updated to width=2
 	Add:    1,
 	Sub:    1,
 	Mul:    1,
@@ -105,6 +124,12 @@ var Width = map[uint8]int{
 	Shr:    1,
 	And:    1,
 	Or:     1,
+	GT:     1,
+	GTE:    1,
+	LT:     1,
+	LTE:    1,
+	Eq:     1,
+	Neq:    1,
 	Jump:   3,
 	Jumpz:  3,
 	Jumpnz: 3,
