@@ -123,6 +123,8 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 		return p.parseAddressInstruction(instructions.Jumpnz)
 	case "load":
 		return p.parseLoad()
+	case "store":
+		return p.parseStore()
 	case "mov":
 		return p.parseMov()
 	default:

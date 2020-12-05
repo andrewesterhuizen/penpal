@@ -175,7 +175,7 @@ var movTestCases = []parserTestCase{
 }
 
 // TODO:
-// load label, A           (A = memory[label])
+// load label, A           (A = memory[label]) - labels will be compiled as immediate with an offset
 // load (label + A), A     (A = memory[label + A])
 // load (label - A), A     (A = memory[label - A])
 // load (label + 5), A     (A = memory[label + 5])
@@ -314,6 +314,147 @@ var loadTestCases = []parserTestCase{
 	},
 }
 
+// TODO:
+// store A|B, label          (memory[label] = A|B)
+// store A|B, (label + A)    (memory[label + A] = A|B)
+// store A|B, (label - A)    (memory[label - A] = A|B)
+// store A|B, (label + 3)    (memory[label + 3] = A|B)
+// store A|B, (label - 3)    (memory[label - 3] = A|B)
+// store A|B, label[3]       (memory[label + A] = A|B)
+
+// store (value in register) at (memory address)
+// store src (register), dest (address/labeladdrerss|relativeaddress)
+// instructions.Store, dest reg, mode, offset, addressh, addressl
+var storeTestCases = []parserTestCase{
+	// store A, 0xabcd
+	{
+		input:  tokens(tokenText("store"), tokenText("A"), tokenComma(), tokenInt("0xabcd"), tokenNL(), tokenEOF()),
+		output: []byte{instructions.Store, instructions.RegisterA, instructions.Immediate, 0x0, 0xab, 0xcd},
+	},
+	// store B, fp
+	{
+		input:  tokens(tokenText("store"), tokenText("B"), tokenComma(), tokenText("fp"), tokenNL(), tokenEOF()),
+		output: []byte{instructions.Store, instructions.RegisterB, instructions.FramePointerWithOffset, 0x0, 0x0, 0x0},
+	},
+	// store A, (fp + B)
+	{
+		input: tokens(
+			tokenText("store"),
+			tokenText("A"),
+			tokenComma(),
+			tokenLParen(),
+			tokenText("fp"),
+			token(lexer_rewrite.TokenTypePlus, "+"),
+			tokenText("B"),
+			tokenRParen(),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerPlusRegister, instructions.RegisterB, 0x0, 0x0},
+	},
+	// store B, (fp - A)
+	{
+		input: tokens(
+			tokenText("store"),
+			tokenText("B"),
+			tokenComma(),
+			tokenLParen(),
+			tokenText("fp"),
+			token(lexer_rewrite.TokenTypeMinus, "-"),
+			tokenText("A"),
+			tokenRParen(),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Store, instructions.RegisterB, instructions.FramePointerMinusRegister, instructions.RegisterA, 0x0, 0x0},
+	},
+	// store B, (fp + 3)
+	{
+		input: tokens(
+			tokenText("store"),
+			tokenText("B"),
+			tokenComma(),
+			tokenLParen(),
+			tokenText("fp"),
+			token(lexer_rewrite.TokenTypePlus, "+"),
+			tokenInt("3"),
+			tokenRParen(),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Store, instructions.RegisterB, instructions.FramePointerWithOffset, 0x3, 0x0, 0x0},
+	},
+	// store A, (fp - 1)
+	{
+		input: tokens(
+			tokenText("store"),
+			tokenText("A"),
+			tokenComma(),
+			tokenLParen(),
+			tokenText("fp"),
+			token(lexer_rewrite.TokenTypeMinus, "-"),
+			tokenInt("1"),
+			tokenRParen(),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0xff, 0x0, 0x0},
+	},
+	// store A, (fp[3])
+	{
+		input: tokens(
+			tokenText("store"),
+			tokenText("A"),
+			tokenComma(),
+			tokenLParen(),
+			tokenText("fp"),
+			token(lexer_rewrite.TokenTypeLeftBracket, "["),
+			tokenInt("3"),
+			token(lexer_rewrite.TokenTypeRightBracket, "]"),
+			tokenRParen(),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0x3, 0x0, 0x0},
+	},
+	// store A, (fp[+3])
+	{
+		input: tokens(
+			tokenText("store"),
+			tokenText("A"),
+			tokenComma(),
+			tokenLParen(),
+			tokenText("fp"),
+			token(lexer_rewrite.TokenTypeLeftBracket, "["),
+			token(lexer_rewrite.TokenTypePlus, "+"),
+			tokenInt("3"),
+			token(lexer_rewrite.TokenTypeRightBracket, "]"),
+			tokenRParen(),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0x3, 0x0, 0x0},
+	},
+	// store A, (fp[-1])
+	{
+		input: tokens(
+			tokenText("store"),
+			tokenText("A"),
+			tokenComma(),
+			tokenLParen(),
+			tokenText("fp"),
+			token(lexer_rewrite.TokenTypeLeftBracket, "["),
+			token(lexer_rewrite.TokenTypeMinus, "-"),
+			tokenInt("1"),
+			token(lexer_rewrite.TokenTypeRightBracket, "]"),
+			tokenRParen(),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0xff, 0x0, 0x0},
+	},
+}
+
 // TODO: labels
 var callTestCases = []parserTestCase{
 	// call 0xba
@@ -386,13 +527,14 @@ func TestParser(t *testing.T) {
 	parserTestCases = append(parserTestCases, callTestCases...)
 	parserTestCases = append(parserTestCases, jumpTestCases...)
 	parserTestCases = append(parserTestCases, loadTestCases...)
+	parserTestCases = append(parserTestCases, storeTestCases...)
 
 	for _, tc := range parserTestCases {
 		p := NewParser()
 		p.Load(tc.input)
 		out, err := p.Run()
 		if err != nil {
-			t.Error(err)
+			t.Errorf("%s\nwith input:\n %v", err, tc.input)
 			return
 		}
 
