@@ -11,7 +11,8 @@ const (
 	TokenTypeNewLine
 	TokenTypeText
 	TokenTypeDefine
-	TokenTypeInclude
+	TokenTypeFileInclude
+	TokenTypeSystemInclude
 	TokenTypeInteger
 	TokenTypePlus
 	TokenTypeMinus
@@ -70,8 +71,10 @@ func (t TokenType) String() string {
 		return "Label"
 	case TokenTypeDefine:
 		return "Define"
-	case TokenTypeInclude:
-		return "Include"
+	case TokenTypeFileInclude:
+		return "FileInclude"
+	case TokenTypeSystemInclude:
+		return "SystemInclude"
 	default:
 		return "Unknown"
 	}
@@ -136,9 +139,10 @@ func (l *Lexer) Run() ([]Token, error) {
 				// #define test = 0xaa => {type: Define, value: "test" }
 				l.lexDefine()
 			case 'i':
-				// TODO: return single token instead of define + text tokens
-				// #include "test" / <test> => {type: Include/SystemInclude, value: "test" }
-				l.lexInclude()
+				err := l.lexInclude()
+				if err != nil {
+					return nil, err
+				}
 			default:
 				return nil, fmt.Errorf("unexpected next rune %v", string(r))
 			}
@@ -255,15 +259,52 @@ func (l *Lexer) lexDefine() {
 	return
 }
 
-func (l *Lexer) lexInclude() {
+func (l *Lexer) lexInclude() error {
 	r := rune(l.input[l.pos])
+
+	// skip "include" text
+	for isAlphaNumeric(r) {
+		r = l.next()
+	}
+
+	r = l.next()
+
+	tt := TokenTypeFileInclude
+
+	switch r {
+	case '"':
+		tt = TokenTypeFileInclude
+	case '<':
+		tt = TokenTypeSystemInclude
+	default:
+		return fmt.Errorf("expected '<' or '\"', got %s", string(r))
+	}
+
+	l.pos++
+	l.start = l.pos
+
+	r = rune(l.input[l.pos])
 
 	for isAlphaNumeric(r) {
 		r = l.next()
 	}
 
-	l.addToken(TokenTypeInclude)
-	return
+	if r == '.' {
+		r = l.next()
+
+		// get extension
+		for isAlphaNumeric(r) {
+			r = l.next()
+		}
+
+		l.addToken(tt)
+		l.pos++ // skip '>' or '"'
+		return nil
+	}
+
+	l.addToken(tt)
+	l.pos++ // skip '>' or '"'
+	return nil
 }
 
 func (l *Lexer) lexInteger() {

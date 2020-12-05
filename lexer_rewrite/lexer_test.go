@@ -114,12 +114,7 @@ var testCases = []testCase{
 	{
 		"#include \"test.asm\"\n",
 		[]Token{
-			newToken(TokenTypeInclude, "#include"),
-			newToken(TokenTypeDoubleQuote, "\""),
-			newToken(TokenTypeText, "test"),
-			newToken(TokenTypeDot, "."),
-			newToken(TokenTypeText, "asm"),
-			newToken(TokenTypeDoubleQuote, "\""),
+			newToken(TokenTypeFileInclude, "test.asm"),
 			newToken(TokenTypeNewLine, "\n"),
 			newToken(TokenTypeEndOfFile, ""),
 		},
@@ -127,10 +122,7 @@ var testCases = []testCase{
 	{
 		"#include <test>\n",
 		[]Token{
-			newToken(TokenTypeInclude, "#include"),
-			newToken(TokenTypeAngleBracketLeft, "<"),
-			newToken(TokenTypeText, "test"),
-			newToken(TokenTypeAngleBracketRight, ">"),
+			newToken(TokenTypeSystemInclude, "test"),
 			newToken(TokenTypeNewLine, "\n"),
 			newToken(TokenTypeEndOfFile, ""),
 		},
