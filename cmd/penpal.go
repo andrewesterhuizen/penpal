@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/andrewesterhuizen/penpal/assembler2"
 	"github.com/andrewesterhuizen/penpal/penpal"
 
-	"github.com/andrewesterhuizen/penpal/assembler"
 	"github.com/andrewesterhuizen/penpal/midi"
 	"github.com/andrewesterhuizen/penpal/vm"
 )
@@ -41,7 +41,7 @@ func compileFromFile(filename string) {
 		log.Fatal(err)
 	}
 
-	a := assembler.New(assembler.Config{SystemIncludes: systemIncludes})
+	a := assembler2.New(assembler2.Config{SystemIncludes: systemIncludes})
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
@@ -80,9 +80,9 @@ func loadProgramFromFile(filename string) []byte {
 		log.Fatal(err)
 	}
 
-	a := assembler.New(assembler.Config{
+	a := assembler2.New(assembler2.Config{
 		SystemIncludes: systemIncludes,
-		InteruptLabels: [3]string{"on_tick"},
+		// InteruptLabels: [3]string{"on_tick"},
 	})
 
 	program, err := a.GetProgram(filename, string(f))
@@ -96,29 +96,29 @@ func loadProgramFromFile(filename string) []byte {
 func executeProgramFromFile(filename string) {
 	program := loadProgramFromFile(filename)
 
-	midiHandler := midi.NewPortMidiMidiHandler()
-	defer midiHandler.Close()
+	// midiHandler := midi.NewPortMidiMidiHandler()
+	// defer midiHandler.Close()
 
 	vm := vm.New()
 
-	msPerMinute := 60 * 1000
+	// msPerMinute := 60 * 1000
 
-	// TODO: clock should be enabled according to a flag
-	go func() {
-		for {
-			bpm := vm.GetMemory(penpal.AddressBPM)
-			ppqn := vm.GetMemory(penpal.AddressPPQN)
+	// // TODO: clock should be enabled according to a flag
+	// go func() {
+	// 	for {
+	// 		bpm := vm.GetMemory(penpal.AddressBPM)
+	// 		ppqn := vm.GetMemory(penpal.AddressPPQN)
 
-			if bpm == 0 || ppqn == 0 {
-				continue
-			}
+	// 		if bpm == 0 || ppqn == 0 {
+	// 			continue
+	// 		}
 
-			interval := (msPerMinute / int(bpm)) / int(ppqn)
-			vm.Interupt(0)
-			time.Sleep(time.Duration(interval) * time.Millisecond)
+	// 		interval := (msPerMinute / int(bpm)) / int(ppqn)
+	// 		vm.Interupt(0)
+	// 		time.Sleep(time.Duration(interval) * time.Millisecond)
 
-		}
-	}()
+	// 	}
+	// }()
 
 	vm.Load(program)
 
@@ -136,6 +136,7 @@ func executeProgramFromFile(filename string) {
 			select {
 			case <-ticker.C:
 				if vm.Halted {
+					vm.PrintReg()
 					done <- true
 					return
 				}
@@ -150,12 +151,12 @@ func executeProgramFromFile(filename string) {
 		}
 	}()
 
-	go func() {
-		for m := range messages {
-			midiHandler.Send(m[0], m[1], m[2])
-			vm.SetMemory(penpal.AddressSendMessage, 0x0)
-		}
-	}()
+	// go func() {
+	// 	for m := range messages {
+	// 		midiHandler.Send(m[0], m[1], m[2])
+	// 		vm.SetMemory(penpal.AddressSendMessage, 0x0)
+	// 	}
+	// }()
 
 	<-done
 }

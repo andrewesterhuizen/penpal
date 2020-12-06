@@ -163,36 +163,23 @@ func (vm *VM) Interupt(n int) {
 }
 
 func (vm *VM) execute(instruction uint8) {
+	fmt.Println(instruction)
 	switch instruction {
 	case instructions.Swap:
 		vm.a, vm.b = vm.b, vm.a
 		vm.ip++
 
 	case instructions.Mov:
-		mode := vm.fetch()
 		register := vm.fetch()
-
-		var dest *uint8
+		value := vm.fetch()
 
 		switch register {
 		case instructions.RegisterA:
-			dest = &vm.a
+			vm.a = value
 		case instructions.RegisterB:
-			dest = &vm.b
+			vm.b = value
 		default:
-			log.Fatalf("encountered unknown destination for mov, 0x%02x", register)
-		}
-
-		switch mode {
-		case instructions.AddressingModeImmediate:
-			*dest = vm.fetch()
-		case instructions.AddressingModeFPRelative:
-			offset := int8(vm.fetch())
-			addr := vm.getFramePointerRelativeAddress(offset)
-			v := vm.memory[addr]
-			*dest = v
-		default:
-			log.Fatalf("encountered unknown addressing mode for mov, 0x%02x", mode)
+			log.Fatalf("register %d does not exist", register)
 		}
 
 		vm.ip++
@@ -226,23 +213,52 @@ func (vm *VM) execute(instruction uint8) {
 		vm.ip++
 
 	case instructions.Load:
+
+		// 		addressh addressl (Immediate|FramePointerWithOffset) offset (dest reg)
+
+		addr := vm.fetch16()
+
 		mode := vm.fetch()
 		modeArg := vm.fetch()
 
-		srcAddr := vm.fetch16()
+		destRegister := vm.fetch()
+		var dest *uint8
+
+		switch destRegister {
+		case instructions.RegisterA:
+			dest = &vm.a
+		case instructions.RegisterB:
+			dest = &vm.b
+		default:
+			log.Fatalf("register %d does not exist", destRegister)
+		}
 
 		switch mode {
+		case instructions.Immediate:
+			*dest = vm.memory[addr]
+
 		case instructions.FramePointerWithOffset:
-			addr := vm.getFramePointerRelativeAddress(int8(modeArg))
-			vm.memory[addr] = vm.memory[srcAddr]
-		case instructions.Register:
+			fpreladdr := vm.getFramePointerRelativeAddress(int8(modeArg))
+			*dest = vm.memory[fpreladdr]
+
+		case instructions.FramePointerPlusRegister:
 			switch modeArg {
 			case instructions.RegisterA:
-				vm.a = vm.memory[srcAddr]
+				*dest = vm.memory[vm.fp+uint16(vm.a)]
 			case instructions.RegisterB:
-				vm.b = vm.memory[srcAddr]
+				*dest = vm.memory[vm.fp+uint16(vm.b)]
 			default:
-				log.Fatalf("load: encountered unknown register source 0x%02x", mode)
+				log.Fatalf("register %d does not exist", modeArg)
+			}
+
+		case instructions.FramePointerMinusRegister:
+			switch modeArg {
+			case instructions.RegisterA:
+				*dest = vm.memory[vm.fp-uint16(vm.a)]
+			case instructions.RegisterB:
+				*dest = vm.memory[vm.fp-uint16(vm.b)]
+			default:
+				log.Fatalf("register %d does not exist", modeArg)
 			}
 
 		default:
@@ -281,6 +297,30 @@ func (vm *VM) execute(instruction uint8) {
 
 	case instructions.Or:
 		vm.a = vm.a | vm.b
+		vm.ip++
+
+	case instructions.GT:
+		vm.a = boolToByte(vm.a > vm.b)
+		vm.ip++
+
+	case instructions.GTE:
+		vm.a = boolToByte(vm.a >= vm.b)
+		vm.ip++
+
+	case instructions.LT:
+		vm.a = boolToByte(vm.a < vm.b)
+		vm.ip++
+
+	case instructions.LTE:
+		vm.a = boolToByte(vm.a <= vm.b)
+		vm.ip++
+
+	case instructions.Eq:
+		vm.a = boolToByte(vm.a == vm.b)
+		vm.ip++
+
+	case instructions.Neq:
+		vm.a = boolToByte(vm.a != vm.b)
 		vm.ip++
 
 	case instructions.Jump:
@@ -399,4 +439,12 @@ func (vm *VM) Tick() {
 	}
 
 	vm.execute(vm.memory[vm.ip])
+}
+
+func boolToByte(v bool) byte {
+	if v {
+		return 1
+	}
+
+	return 0
 }

@@ -83,10 +83,11 @@ func (t TokenType) String() string {
 }
 
 type Token struct {
-	Type   TokenType
-	Value  string
-	Line   int
-	Column int
+	Type     TokenType
+	Value    string
+	FileName string
+	Line     int
+	Column   int
 }
 
 func (t Token) String() string {
@@ -107,6 +108,7 @@ type Lexer struct {
 	pos         int
 	startOfLine int
 	line        int
+	filename    string
 	tokens      []Token
 }
 
@@ -114,13 +116,23 @@ func NewLexer() *Lexer {
 	return &Lexer{}
 }
 
-func (l *Lexer) Load(input string) {
+func (l *Lexer) reset(filename string, input string) {
+	l.filename = filename
 	l.input = input
 	l.start = 0
 	l.pos = 0
+	l.line = 1
+	l.startOfLine = 0
+	l.tokens = []Token{}
 }
 
-func (l *Lexer) Run() ([]Token, error) {
+func (l *Lexer) errWithPos(err error) error {
+	return fmt.Errorf("[%d:%d] %s", l.line, l.getColumn(), err)
+}
+
+func (l *Lexer) Run(filename string, input string) ([]Token, error) {
+	l.reset(filename, input)
+
 	for {
 		l.start = l.pos
 		r := rune(l.input[l.pos])
@@ -136,7 +148,7 @@ func (l *Lexer) Run() ([]Token, error) {
 
 			err := l.lexInclude()
 			if err != nil {
-				return nil, err
+				return nil, l.errWithPos(err)
 			}
 
 		case r == '\n':
@@ -221,9 +233,19 @@ func (l *Lexer) getText() string {
 	return l.input[l.start:l.pos]
 }
 
-func (l *Lexer) addToken(tokenType TokenType) {
+func (l *Lexer) getColumn() int {
 	v := l.input[l.start:l.pos]
-	t := Token{Type: tokenType, Value: v, Line: l.line, Column: l.pos - l.startOfLine - len(v)}
+	return l.pos - l.startOfLine - len(v)
+}
+
+func (l *Lexer) addToken(tokenType TokenType) {
+	t := Token{
+		Type:     tokenType,
+		Value:    l.input[l.start:l.pos],
+		FileName: l.filename,
+		Line:     l.line,
+		Column:   l.getColumn(),
+	}
 	l.tokens = append(l.tokens, t)
 	l.start = l.pos
 }
@@ -271,6 +293,7 @@ func (l *Lexer) lexInclude() error {
 	case '<':
 		tt = TokenTypeSystemInclude
 	default:
+		fmt.Println(l.input)
 		return fmt.Errorf("expected '<' or '\"', got %s", string(r))
 	}
 

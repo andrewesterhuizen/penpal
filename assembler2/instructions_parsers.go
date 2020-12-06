@@ -1,4 +1,4 @@
-package parser
+package assembler2
 
 import (
 	"fmt"
@@ -79,17 +79,46 @@ func (p *Parser) parseAddressInstruction(instruction byte) error {
 	return err
 }
 
-// encoding = instruction, (immediate mode|register mode), (immediate value|register number)
-func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
-	p.addByte(instruction)
+// func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
+// 	p.addByte(instruction)
+
+// 	t := p.nextToken()
+
+// 	switch t.Type {
+// 	// no operand = implied B register
+// 	case lexer_rewrite.TokenTypeNewLine:
+// 		p.addByte(instructions.Register)
+// 		p.addByte(instructions.RegisterB)
+
+// 		return nil
+// 	case lexer_rewrite.TokenTypeInteger:
+// 		p.addByte(instructions.Immediate)
+
+// 		n, err := parseIntegerToken(t)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		p.addByte(byte(n))
+
+// 	default:
+// 		return fmt.Errorf("unexpected operand \"%s\"", t.Value)
+// 	}
+
+// 	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)
+// 	return err
+// }
+
+func (p *Parser) parsePushInstruction() error {
+	p.addByte(instructions.Push)
 
 	t := p.nextToken()
 
 	switch t.Type {
-	// no operand = implied B register
+	// no operand = implied A register
 	case lexer_rewrite.TokenTypeNewLine:
 		p.addByte(instructions.Register)
-		p.addByte(instructions.RegisterB)
+		p.addByte(instructions.RegisterA)
 
 		return nil
 	case lexer_rewrite.TokenTypeInteger:
@@ -270,51 +299,8 @@ func (p *Parser) parseMemoryAddress() (byte, byte, byte, byte, error) {
 	}
 }
 
-// encoding =  mov, mode, value, dest
 func (p *Parser) parseMov() error {
 	p.addByte(instructions.Mov)
-
-	t := p.nextToken()
-
-	switch t.Type {
-	case lexer_rewrite.TokenTypeInteger:
-		n, err := parseIntegerToken(t)
-		if err != nil {
-			return err
-		}
-
-		p.addByte(instructions.Immediate)
-		p.addByte(byte(n))
-
-	case lexer_rewrite.TokenTypeLeftParen:
-		p.backup()
-		mode, offset, err := p.parseOffsetAddress()
-		if err != nil {
-			return err
-		}
-
-		p.addByte(mode)
-		p.addByte(offset)
-
-	case lexer_rewrite.TokenTypeText:
-		switch t.Value {
-		case "fp":
-			// mov fp, A => (A = (fp+0))
-			p.addByte(instructions.FramePointerWithOffset)
-			p.addByte(0)
-
-		default:
-			return fmt.Errorf("unknown register \"%s\"", t.Value)
-		}
-
-	default:
-		return fmt.Errorf("unexpected token \"%s\"", t.Value)
-	}
-
-	_, err := p.expect(lexer_rewrite.TokenTypeComma)
-	if err != nil {
-		return err
-	}
 
 	dest := p.nextToken()
 
@@ -329,11 +315,27 @@ func (p *Parser) parseMov() error {
 
 	p.addByte(reg)
 
+	_, err = p.expect(lexer_rewrite.TokenTypeComma)
+	if err != nil {
+		return err
+	}
+
+	t, err := p.expect(lexer_rewrite.TokenTypeInteger)
+	if err != nil {
+		return err
+	}
+
+	n, err := parseIntegerToken(t)
+	if err != nil {
+		return err
+	}
+
+	p.addByte(byte(n))
+
 	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
 	return err
 }
 
-// instructions.Load, addressh, addressl, mode, offset, dest reg
 func (p *Parser) parseLoad() error {
 	p.addByte(instructions.Load)
 
@@ -371,12 +373,12 @@ func (p *Parser) parseLoad() error {
 	return err
 }
 
-// instructions.Store, dest reg, mode, offset, addressh, addressl
 func (p *Parser) parseStore() error {
 	p.addByte(instructions.Store)
 
 	// register
 	dest := p.nextToken()
+
 	if dest.Type != lexer_rewrite.TokenTypeText {
 		return fmt.Errorf("expected register, got %s", dest.Type)
 	}

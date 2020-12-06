@@ -1,4 +1,4 @@
-package parser
+package assembler2
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 )
 
 type parserTestCase struct {
-	files  map[string][]lexer_rewrite.Token
 	input  []lexer_rewrite.Token
 	output []byte
 }
@@ -86,108 +85,18 @@ var singleOperandInstructionTestCases = []parserTestCase{
 }
 
 var movTestCases = []parserTestCase{
-	// mov 0xab, A
+	// mov A, 0xab
 	{
-		input:  tokens(tokenInstruction("mov"), tokenInt("0xab"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
-		output: []byte{instructions.Mov, instructions.AddressingModeImmediate, 0xab, instructions.RegisterA},
+		input:  tokens(tokenInstruction("mov"), tokenText("A"), tokenComma(), tokenInt("0xab"), tokenNL(), tokenEOF()),
+		output: []byte{instructions.Mov, instructions.RegisterA, 0xab},
 	},
-	// mov fp, A
+	// mov B, 0xcd
 	{
-		input:  tokens(tokenInstruction("mov"), tokenText("fp"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
-		output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x0, instructions.RegisterA},
-	},
-	// mov (fp+1), A
-	{
-		input: tokens(
-			tokenInstruction("mov"),
-			tokenLParen(),
-			tokenText("fp"),
-			token(lexer_rewrite.TokenTypePlus, "+"),
-			tokenInt("1"),
-			tokenRParen(),
-			tokenComma(),
-			tokenText("A"),
-			tokenNL(),
-			tokenEOF(),
-		),
-		output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x1, instructions.RegisterA},
-	},
-	// mov (fp-1), B
-	{
-		input: tokens(
-			tokenInstruction("mov"),
-			tokenLParen(),
-			tokenText("fp"),
-			token(lexer_rewrite.TokenTypeMinus, "-"),
-			tokenInt("1"),
-			tokenRParen(),
-			tokenComma(),
-			tokenText("B"),
-			tokenNL(),
-			tokenEOF(),
-		),
-		output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0xff, instructions.RegisterB},
-	},
-	// mov (fp[3]), B
-	{
-		input: tokens(
-			tokenInstruction("mov"),
-			tokenLParen(),
-			tokenText("fp"),
-			token(lexer_rewrite.TokenTypeLeftBracket, "["),
-			tokenInt("3"),
-			token(lexer_rewrite.TokenTypeRightBracket, "]"),
-			tokenRParen(),
-			tokenComma(),
-			tokenText("B"),
-			tokenNL(),
-			tokenEOF(),
-		),
-		output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x3, instructions.RegisterB},
-	},
-	// mov (fp[+3]), A
-	{
-		input: tokens(tokenInstruction("mov"),
-			tokenLParen(),
-			tokenText("fp"),
-			token(lexer_rewrite.TokenTypeLeftBracket, "["),
-			token(lexer_rewrite.TokenTypePlus, "+"),
-			tokenInt("3"),
-			token(lexer_rewrite.TokenTypeRightBracket, "]"),
-			tokenRParen(),
-			tokenComma(),
-			tokenText("A"),
-			tokenNL(),
-			tokenEOF()),
-		output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x3, instructions.RegisterA},
-	},
-	// mov (fp[-3]), A
-	{
-		input: tokens(tokenInstruction("mov"),
-			tokenLParen(),
-			tokenText("fp"),
-			token(lexer_rewrite.TokenTypeLeftBracket, "["),
-			token(lexer_rewrite.TokenTypeMinus, "-"),
-			tokenInt("3"),
-			token(lexer_rewrite.TokenTypeRightBracket, "]"),
-			tokenRParen(), tokenComma(),
-			tokenText("A"),
-			tokenNL(),
-			tokenEOF(),
-		),
-		output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0xfd, instructions.RegisterA},
+		input:  tokens(tokenInstruction("mov"), tokenText("B"), tokenComma(), tokenInt("0xcd"), tokenNL(), tokenEOF()),
+		output: []byte{instructions.Mov, instructions.RegisterB, 0xcd},
 	},
 }
 
-// TODO:
-// load label, A           (A = memory[label]) - labels will be compiled as immediate with an offset
-// load (label + A), A     (A = memory[label + A])
-// load (label - A), A     (A = memory[label - A])
-// load (label + 5), A     (A = memory[label + 5])
-// load (label - 5), A     (A = memory[label - 5])
-// load (label[5]), A      (A = memory[label + 5])
-
-// load src (address|label), dest (register)
 var loadTestCases = []parserTestCase{
 	// load 0xae, A
 	{
@@ -319,17 +228,6 @@ var loadTestCases = []parserTestCase{
 	},
 }
 
-// TODO:
-// store A|B, label          (memory[label] = A|B)
-// store A|B, (label + A)    (memory[label + A] = A|B)
-// store A|B, (label - A)    (memory[label - A] = A|B)
-// store A|B, (label + 3)    (memory[label + 3] = A|B)
-// store A|B, (label - 3)    (memory[label - 3] = A|B)
-// store A|B, label[3]       (memory[label + A] = A|B)
-
-// store (value in register) at (memory address)
-// store src (register), dest (address/labeladdrerss|relativeaddress)
-// instructions.Store, dest reg, mode, offset, addressh, addressl
 var storeTestCases = []parserTestCase{
 	// store A, 0xabcd
 	{
@@ -460,7 +358,6 @@ var storeTestCases = []parserTestCase{
 	},
 }
 
-// TODO: labels
 var callTestCases = []parserTestCase{
 	// call 0xba
 	{
@@ -488,6 +385,19 @@ var jumpTestCases = []parserTestCase{
 	// jump test_label
 	{
 		input: tokens(
+			token(lexer_rewrite.TokenTypeLabel, "test_label"),
+			tokenInstruction("add"),
+			tokenNL(),
+			tokenInstruction("jump"),
+			tokenText("test_label"),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Add, instructions.Jump, 0, 0},
+	},
+	// jump test_label, reference before definition
+	{
+		input: tokens(
 			tokenInstruction("jump"),
 			tokenText("test_label"),
 			tokenNL(),
@@ -497,7 +407,7 @@ var jumpTestCases = []parserTestCase{
 			tokenNL(),
 			tokenEOF(),
 		),
-		output: []byte{instructions.Jump, 0, 3, instructions.Add, instructions.Register, instructions.RegisterB},
+		output: []byte{instructions.Jump, 0, 3, instructions.Add},
 	},
 	// jump test_label, label def has newline
 	{
@@ -512,7 +422,7 @@ var jumpTestCases = []parserTestCase{
 			tokenNL(),
 			tokenEOF(),
 		),
-		output: []byte{instructions.Jump, 0, 3, instructions.Add, instructions.Register, instructions.RegisterB},
+		output: []byte{instructions.Jump, 0, 3, instructions.Add},
 	},
 	// jumpz 0xba
 	{
@@ -539,8 +449,8 @@ var jumpTestCases = []parserTestCase{
 var labelTestCases = []parserTestCase{
 	{input: tokens(token(lexer_rewrite.TokenTypeLabel, "label"), tokenNL()), output: []byte{}},
 	{
-		input:  tokens(token(lexer_rewrite.TokenTypeLabel, "label"), tokenNL(), tokenInstruction("add"), tokenNL()),
-		output: newAritmeticLogicInstructionTest("add", instructions.Add)[0].output,
+		input:  tokens(token(lexer_rewrite.TokenTypeLabel, "label"), tokenNL(), tokenInstruction("db"), tokenInt("55"), tokenNL()),
+		output: []byte{55},
 	},
 }
 
@@ -563,25 +473,59 @@ var dbTestCases = []parserTestCase{
 	},
 }
 
+var testCases = []parserTestCase{
+	{
+		// check parser ignores whitespace
+		input: tokens(
+			tokenNL(),
+			tokenInstruction("db"),
+			tokenInt("1"),
+			tokenNL(),
+			tokenInstruction("db"),
+			tokenInt("2"),
+			tokenNL(),
+			tokenNL(),
+			tokenInstruction("db"),
+			tokenInt("3"),
+			tokenNL(),
+			tokenNL(),
+			tokenNL(),
+			tokenNL(),
+			tokenEOF(),
+		), output: []byte{1, 2, 3},
+	},
+}
+
+var pushTestCases = []parserTestCase{
+	{
+		input:  tokens(tokenInstruction("push"), tokenNL(), tokenEOF()),
+		output: []byte{instructions.Push, instructions.Register, instructions.RegisterA},
+	},
+	{
+		input:  tokens(tokenInstruction("push"), tokenInt("0xae"), tokenNL(), tokenEOF()),
+		output: []byte{instructions.Push, instructions.Immediate, 0xae},
+	},
+}
+
 func TestParser(t *testing.T) {
 	var parserTestCases = []parserTestCase{}
 	// arithmetic and logic
 	// no operand = implied B register as value
 	// instruction, (immediate mode|register mode), (immediate value|register number)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("add", instructions.Add)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("sub", instructions.Sub)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("mul", instructions.Mul)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("div", instructions.Div)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("or", instructions.Or)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("shl", instructions.Shl)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("shr", instructions.Shr)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("rand", instructions.Rand)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("gt", instructions.GT)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("gte", instructions.GTE)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("lt", instructions.LT)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("lte", instructions.LTE)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("eq", instructions.Eq)...)
-	parserTestCases = append(parserTestCases, newAritmeticLogicInstructionTest("neq", instructions.Neq)...)
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("add", instructions.Add))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("sub", instructions.Sub))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("mul", instructions.Mul))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("div", instructions.Div))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("or", instructions.Or))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("shl", instructions.Shl))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("shr", instructions.Shr))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("rand", instructions.Rand))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("gt", instructions.GT))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("gte", instructions.GTE))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("lt", instructions.LT))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("lte", instructions.LTE))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("eq", instructions.Eq))
+	parserTestCases = append(parserTestCases, newNoOperandInstructionTest("neq", instructions.Neq))
 
 	parserTestCases = append(parserTestCases, singleOperandInstructionTestCases...)
 	parserTestCases = append(parserTestCases, movTestCases...)
@@ -591,16 +535,13 @@ func TestParser(t *testing.T) {
 	parserTestCases = append(parserTestCases, storeTestCases...)
 	parserTestCases = append(parserTestCases, labelTestCases...)
 	parserTestCases = append(parserTestCases, dbTestCases...)
+	parserTestCases = append(parserTestCases, testCases...)
+	parserTestCases = append(parserTestCases, pushTestCases...)
 
 	for _, tc := range parserTestCases {
 		p := NewParser()
 
-		files := map[string][]lexer_rewrite.Token{
-			"main": tc.input,
-		}
-
-		p.Load("main", files)
-		out, err := p.Run()
+		out, err := p.Run(tc.input)
 		if err != nil {
 			t.Errorf("%s\nwith input:\n %v", err, tc.input)
 			return
@@ -609,7 +550,7 @@ func TestParser(t *testing.T) {
 		fmt.Println(out)
 
 		if len(tc.output) != len(out) {
-			t.Errorf("expected %v bytes and got %v", len(tc.output), len(out))
+			t.Errorf("expected %v bytes and got %v, with input:\n%s", len(tc.output), len(out), tc.input)
 			return
 		}
 

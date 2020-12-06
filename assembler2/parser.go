@@ -1,4 +1,4 @@
-package parser
+package assembler2
 
 import (
 	"fmt"
@@ -9,13 +9,9 @@ import (
 )
 
 type Parser struct {
-	index        int
-	tokens       []lexer_rewrite.Token
-	instructions []byte
-
-	entryFileName string
-	files         map[string][]lexer_rewrite.Token
-
+	index               int
+	tokens              []lexer_rewrite.Token
+	instructions        []byte
 	currentLableAddress uint16
 	labels              map[string]uint16
 }
@@ -24,11 +20,6 @@ func NewParser() *Parser {
 	p := Parser{}
 	p.labels = map[string]uint16{}
 	return &p
-}
-
-func (p *Parser) Load(entryFileName string, files map[string][]lexer_rewrite.Token) {
-	p.entryFileName = entryFileName
-	p.files = files
 }
 
 func parseIntegerToken(t lexer_rewrite.Token) (uint64, error) {
@@ -92,37 +83,37 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 	case "reti":
 		return p.parseNoOperandInstruction(instructions.Reti)
 	case "push":
-		return p.parseArithmeticLogicInstruction(instructions.Push)
+		return p.parsePushInstruction()
 	case "add":
-		return p.parseArithmeticLogicInstruction(instructions.Add)
+		return p.parseNoOperandInstruction(instructions.Add)
 	case "sub":
-		return p.parseArithmeticLogicInstruction(instructions.Sub)
+		return p.parseNoOperandInstruction(instructions.Sub)
 	case "mul":
-		return p.parseArithmeticLogicInstruction(instructions.Mul)
+		return p.parseNoOperandInstruction(instructions.Mul)
 	case "div":
-		return p.parseArithmeticLogicInstruction(instructions.Div)
+		return p.parseNoOperandInstruction(instructions.Div)
 	case "shl":
-		return p.parseArithmeticLogicInstruction(instructions.Shl)
+		return p.parseNoOperandInstruction(instructions.Shl)
 	case "shr":
-		return p.parseArithmeticLogicInstruction(instructions.Shr)
+		return p.parseNoOperandInstruction(instructions.Shr)
 	case "and":
-		return p.parseArithmeticLogicInstruction(instructions.And)
+		return p.parseNoOperandInstruction(instructions.And)
 	case "or":
-		return p.parseArithmeticLogicInstruction(instructions.Or)
+		return p.parseNoOperandInstruction(instructions.Or)
 	case "gt":
-		return p.parseArithmeticLogicInstruction(instructions.GT)
+		return p.parseNoOperandInstruction(instructions.GT)
 	case "gte":
-		return p.parseArithmeticLogicInstruction(instructions.GTE)
+		return p.parseNoOperandInstruction(instructions.GTE)
 	case "lt":
-		return p.parseArithmeticLogicInstruction(instructions.LT)
+		return p.parseNoOperandInstruction(instructions.LT)
 	case "lte":
-		return p.parseArithmeticLogicInstruction(instructions.LTE)
+		return p.parseNoOperandInstruction(instructions.LTE)
 	case "eq":
-		return p.parseArithmeticLogicInstruction(instructions.Eq)
+		return p.parseNoOperandInstruction(instructions.Eq)
 	case "neq":
-		return p.parseArithmeticLogicInstruction(instructions.Neq)
+		return p.parseNoOperandInstruction(instructions.Neq)
 	case "rand":
-		return p.parseArithmeticLogicInstruction(instructions.Rand)
+		return p.parseNoOperandInstruction(instructions.Rand)
 	case "halt":
 		return p.parseNoOperandInstruction(instructions.Halt)
 	case "call":
@@ -150,6 +141,8 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 func (p *Parser) parseToken(t lexer_rewrite.Token) error {
 	var err error
 	switch t.Type {
+	case lexer_rewrite.TokenTypeNewLine:
+		// skip whitespace
 	case lexer_rewrite.TokenTypeInstruction:
 		err = p.parseInstruction(t)
 	case lexer_rewrite.TokenTypeLabel:
@@ -181,29 +174,6 @@ func (p *Parser) parseTokens() error {
 	return nil
 }
 
-func (p *Parser) processIncludes(filename string) ([]lexer_rewrite.Token, error) {
-	tokens := p.files[filename]
-	out := []lexer_rewrite.Token{}
-
-	for _, t := range tokens {
-		switch t.Type {
-		case lexer_rewrite.TokenTypeFileInclude:
-			includeTokens, err := p.processIncludes(t.Value)
-			if err != nil {
-				return nil, err
-			}
-
-			out = append(out, includeTokens...)
-		case lexer_rewrite.TokenTypeSystemInclude:
-
-		default:
-			out = append(out, t)
-		}
-	}
-
-	return out, nil
-}
-
 func (p *Parser) getLabels() error {
 	for _, t := range p.tokens {
 		switch t.Type {
@@ -220,15 +190,10 @@ func (p *Parser) getLabels() error {
 	return nil
 }
 
-func (p *Parser) Run() ([]byte, error) {
-	tokens, err := p.processIncludes(p.entryFileName)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *Parser) Run(tokens []lexer_rewrite.Token) ([]byte, error) {
 	p.tokens = tokens
 
-	err = p.getLabels()
+	err := p.getLabels()
 	if err != nil {
 		return nil, err
 	}

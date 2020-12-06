@@ -322,5 +322,4 @@ func TestAssembler_EntryPointCorrectWithSystemInclude(t *testing.T) {
 	if program[startIndex+2] != uint8(startIndex) {
 		t.Errorf("incorrect entry point in header")
 	}
-
 }

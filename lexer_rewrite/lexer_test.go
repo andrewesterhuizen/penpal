@@ -121,10 +121,10 @@ var testCases = []testCase{
 }
 
 func TestLexer(t *testing.T) {
+	l := NewLexer()
+
 	for _, tc := range testCases {
-		l := NewLexer()
-		l.Load(tc.input)
-		tokens, err := l.Run()
+		tokens, err := l.Run("", tc.input)
 		if err != nil {
 			t.Error(err)
 			return
