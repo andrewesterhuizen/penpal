@@ -66,9 +66,9 @@ func (p *Parser) parseAddressInstruction(instruction byte) error {
 func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
 	p.addByte(instruction)
 
-	op1 := p.nextToken()
+	t := p.nextToken()
 
-	switch op1.Type {
+	switch t.Type {
 	// no operand = implied B register
 	case lexer_rewrite.TokenTypeNewLine:
 		p.addByte(instructions.Register)
@@ -78,7 +78,7 @@ func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
 	case lexer_rewrite.TokenTypeInteger:
 		p.addByte(instructions.Immediate)
 
-		n, err := parseIntegerToken(op1)
+		n, err := parseIntegerToken(t)
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
 		p.addByte(byte(n))
 
 	default:
-		return fmt.Errorf("unexpected operand \"%s\"", op1.Value)
+		return fmt.Errorf("unexpected operand \"%s\"", t.Value)
 	}
 
 	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)

@@ -13,7 +13,6 @@ const (
 	TokenTypeNewLine
 	TokenTypeText
 	TokenTypeInstruction
-	TokenTypeDefine
 	TokenTypeFileInclude
 	TokenTypeSystemInclude
 	TokenTypeInteger
@@ -74,8 +73,6 @@ func (t TokenType) String() string {
 		return "AngleBracketRight"
 	case TokenTypeLabel:
 		return "Label"
-	case TokenTypeDefine:
-		return "Define"
 	case TokenTypeFileInclude:
 		return "FileInclude"
 	case TokenTypeSystemInclude:
@@ -135,20 +132,13 @@ func (l *Lexer) Run() ([]Token, error) {
 			l.lexText()
 
 		case r == '#':
-			nr := l.peek()
-			l.pos++
+			l.next() // skip #
 
-			switch nr {
-			case 'd':
-				l.lexDefine()
-			case 'i':
-				err := l.lexInclude()
-				if err != nil {
-					return nil, err
-				}
-			default:
-				return nil, fmt.Errorf("unexpected next rune %v", string(r))
+			err := l.lexInclude()
+			if err != nil {
+				return nil, err
 			}
+
 		case r == '\n':
 			l.pos++
 			l.addToken(TokenTypeNewLine)
@@ -260,28 +250,6 @@ func (l *Lexer) lexText() {
 	}
 
 	l.addToken(TokenTypeText)
-	return
-}
-
-func (l *Lexer) lexDefine() {
-	r := rune(l.input[l.pos])
-
-	// skip "define" text
-	for isAlphaNumeric(r) {
-		r = l.next()
-	}
-
-	l.pos++
-	l.start = l.pos
-
-	r = l.next()
-
-	// get define name
-	for isAlphaNumeric(r) {
-		r = l.next()
-	}
-
-	l.addToken(TokenTypeDefine)
 	return
 }
 

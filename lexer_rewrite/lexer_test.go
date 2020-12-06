@@ -102,15 +102,6 @@ var testCases = []testCase{
 		},
 	},
 	{
-		"#define TEST 0xbc\n",
-		[]Token{
-			newToken(TokenTypeDefine, "TEST"),
-			newToken(TokenTypeInteger, "0xbc"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
-		},
-	},
-	{
 		"#include \"test.asm\"\n",
 		[]Token{
 			newToken(TokenTypeFileInclude, "test.asm"),
