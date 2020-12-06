@@ -544,6 +544,25 @@ var labelTestCases = []parserTestCase{
 	},
 }
 
+var dbTestCases = []parserTestCase{
+	{
+		input: tokens(tokenInstruction("db"), tokenInt("33"), tokenNL()), output: []byte{33},
+	},
+	{
+		input: tokens(
+			tokenInstruction("db"),
+			tokenInt("33"),
+			tokenNL(),
+			tokenInstruction("db"),
+			tokenInt("44"),
+			tokenNL(),
+			tokenInstruction("db"),
+			tokenInt("22"),
+			tokenNL(),
+		), output: []byte{33, 44, 22},
+	},
+}
+
 func TestParser(t *testing.T) {
 	var parserTestCases = []parserTestCase{}
 	// arithmetic and logic
@@ -571,6 +590,7 @@ func TestParser(t *testing.T) {
 	parserTestCases = append(parserTestCases, loadTestCases...)
 	parserTestCases = append(parserTestCases, storeTestCases...)
 	parserTestCases = append(parserTestCases, labelTestCases...)
+	parserTestCases = append(parserTestCases, dbTestCases...)
 
 	for _, tc := range parserTestCases {
 		p := NewParser()

@@ -24,6 +24,23 @@ func (p *Parser) parseNoOperandInstruction(instruction byte) error {
 	return err
 }
 
+func (p *Parser) parseDB() error {
+	t, err := p.expect(lexer_rewrite.TokenTypeInteger)
+	if err != nil {
+		return err
+	}
+
+	n, err := parseIntegerToken(t)
+	if err != nil {
+		return err
+	}
+
+	p.addByte(byte(n))
+
+	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
+	return err
+}
+
 func (p *Parser) parseAddressInstruction(instruction byte) error {
 	p.addByte(instruction)
 

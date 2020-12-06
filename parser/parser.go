@@ -139,6 +139,8 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 		return p.parseStore()
 	case "mov":
 		return p.parseMov()
+	case "db":
+		return p.parseDB()
 	default:
 		return fmt.Errorf("unexpected instruction %v", t.Value)
 	}
