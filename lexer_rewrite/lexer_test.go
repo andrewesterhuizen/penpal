@@ -104,8 +104,7 @@ var testCases = []testCase{
 	{
 		"#define TEST 0xbc\n",
 		[]Token{
-			newToken(TokenTypeDefine, "#define"),
-			newToken(TokenTypeText, "TEST"),
+			newToken(TokenTypeDefine, "TEST"),
 			newToken(TokenTypeInteger, "0xbc"),
 			newToken(TokenTypeNewLine, "\n"),
 			newToken(TokenTypeEndOfFile, ""),

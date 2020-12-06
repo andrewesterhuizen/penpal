@@ -140,8 +140,6 @@ func (l *Lexer) Run() ([]Token, error) {
 
 			switch nr {
 			case 'd':
-				// TODO: return single token instead of define + text tokens
-				// #define test = 0xaa => {type: Define, value: "test" }
 				l.lexDefine()
 			case 'i':
 				err := l.lexInclude()
@@ -268,6 +266,17 @@ func (l *Lexer) lexText() {
 func (l *Lexer) lexDefine() {
 	r := rune(l.input[l.pos])
 
+	// skip "define" text
+	for isAlphaNumeric(r) {
+		r = l.next()
+	}
+
+	l.pos++
+	l.start = l.pos
+
+	r = l.next()
+
+	// get define name
 	for isAlphaNumeric(r) {
 		r = l.next()
 	}
