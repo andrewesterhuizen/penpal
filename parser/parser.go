@@ -12,16 +12,23 @@ type Parser struct {
 	index        int
 	tokens       []lexer_rewrite.Token
 	instructions []byte
+
+	entryFileName string
+	files         map[string][]lexer_rewrite.Token
+
+	currentLableAddress uint16
+	labels              map[string]uint16
 }
 
 func NewParser() *Parser {
 	p := Parser{}
+	p.labels = map[string]uint16{}
 	return &p
 }
 
-func (p *Parser) Load(tokens []lexer_rewrite.Token) {
-	p.index = 0
-	p.tokens = tokens
+func (p *Parser) Load(entryFileName string, files map[string][]lexer_rewrite.Token) {
+	p.entryFileName = entryFileName
+	p.files = files
 }
 
 func parseIntegerToken(t lexer_rewrite.Token) (uint64, error) {
@@ -43,6 +50,11 @@ func (p *Parser) addByte(i byte) {
 
 func (p *Parser) nextToken() lexer_rewrite.Token {
 	p.index++
+
+	if p.index >= len(p.tokens) {
+		return lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile}
+	}
+
 	return p.tokens[p.index]
 }
 
@@ -51,22 +63,22 @@ func (p *Parser) backup() {
 	return
 }
 
-func (p *Parser) expect(t lexer_rewrite.TokenType) error {
-	n := p.nextToken()
-	if n.Type != t {
-		return fmt.Errorf("expected %v and got %v", t, n.Type)
-	}
-
-	return nil
-}
-
-func (p *Parser) expectAndGet(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) {
+func (p *Parser) expect(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) {
 	n := p.nextToken()
 	if n.Type != t {
 		return n, fmt.Errorf("expected %v and got %v", t, n.Type)
 	}
 
 	return n, nil
+}
+func (p *Parser) peek() lexer_rewrite.Token {
+	nextIndex := p.index + 1
+
+	if nextIndex >= len(p.tokens) {
+		return lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile}
+	}
+
+	return p.tokens[nextIndex]
 }
 
 func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
@@ -136,8 +148,16 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 func (p *Parser) parseToken(t lexer_rewrite.Token) error {
 	var err error
 	switch t.Type {
-	case lexer_rewrite.TokenTypeText:
+	case lexer_rewrite.TokenTypeInstruction:
 		err = p.parseInstruction(t)
+	case lexer_rewrite.TokenTypeLabel:
+		n := p.peek()
+
+		// newline is optional
+		if n.Type == lexer_rewrite.TokenTypeNewLine {
+			p.index++
+		}
+
 	default:
 		return fmt.Errorf("encountered unknown token %v", t.Type)
 	}
@@ -149,11 +169,71 @@ func (p *Parser) parseToken(t lexer_rewrite.Token) error {
 	return nil
 }
 
-func (p *Parser) Run() ([]byte, error) {
+func (p *Parser) parseTokens() error {
 	for t := p.tokens[p.index]; t.Type != lexer_rewrite.TokenTypeEndOfFile; t = p.nextToken() {
 		if err := p.parseToken(t); err != nil {
-			return nil, err
+			return fmt.Errorf("[%d:%d] %s", t.Line, t.Column, err)
 		}
+	}
+
+	return nil
+}
+
+func (p *Parser) processIncludes(filename string) ([]lexer_rewrite.Token, error) {
+	tokens := p.files[filename]
+	out := []lexer_rewrite.Token{}
+
+	for _, t := range tokens {
+		switch t.Type {
+		case lexer_rewrite.TokenTypeFileInclude:
+			includeTokens, err := p.processIncludes(t.Value)
+			if err != nil {
+				return nil, err
+			}
+
+			out = append(out, includeTokens...)
+		case lexer_rewrite.TokenTypeSystemInclude:
+
+		default:
+			out = append(out, t)
+		}
+	}
+
+	return out, nil
+}
+
+func (p *Parser) getLabels() error {
+	for _, t := range p.tokens {
+		switch t.Type {
+		case lexer_rewrite.TokenTypeLabel:
+			p.labels[t.Value] = uint16(p.currentLableAddress)
+
+		case lexer_rewrite.TokenTypeInstruction:
+			ins := instructions.InstructionByName[t.Value]
+			w := instructions.WidthNew[ins]
+			p.currentLableAddress += uint16(w)
+		}
+	}
+
+	return nil
+}
+
+func (p *Parser) Run() ([]byte, error) {
+	tokens, err := p.processIncludes(p.entryFileName)
+	if err != nil {
+		return nil, err
+	}
+
+	p.tokens = tokens
+
+	err = p.getLabels()
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.parseTokens()
+	if err != nil {
+		return nil, err
 	}
 
 	return p.instructions, nil

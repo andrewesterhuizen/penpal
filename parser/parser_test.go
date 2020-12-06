@@ -9,6 +9,7 @@ import (
 )
 
 type parserTestCase struct {
+	files  map[string][]lexer_rewrite.Token
 	input  []lexer_rewrite.Token
 	output []byte
 }
@@ -24,6 +25,10 @@ func tokens(t ...lexer_rewrite.Token) []lexer_rewrite.Token {
 
 func tokenText(v string) lexer_rewrite.Token {
 	return lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeText, Value: v}
+}
+
+func tokenInstruction(v string) lexer_rewrite.Token {
+	return lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeInstruction, Value: v}
 }
 
 func tokenInt(v string) lexer_rewrite.Token {
@@ -47,13 +52,13 @@ func tokenLParen() lexer_rewrite.Token {
 }
 
 func tokenRParen() lexer_rewrite.Token {
-	return token(lexer_rewrite.TokenTypeLeftParen, "(")
+	return token(lexer_rewrite.TokenTypeRightParen, "(")
 }
 
 func newNoOperandInstructionTest(text string, ins byte) parserTestCase {
 	return parserTestCase{
-		tokens(tokenText(text), tokenNL(), tokenEOF()),
-		[]byte{ins},
+		input:  tokens(tokenInstruction(text), tokenNL(), tokenEOF()),
+		output: []byte{ins},
 	}
 }
 
@@ -61,12 +66,12 @@ func newAritmeticLogicInstructionTest(text string, ins byte) []parserTestCase {
 	return []parserTestCase{
 		// ins
 		{
-			tokens(tokenText(text), tokenNL(), tokenEOF()),
-			[]byte{ins, instructions.Register, instructions.RegisterB},
+			input:  tokens(tokenInstruction(text), tokenNL(), tokenEOF()),
+			output: []byte{ins, instructions.Register, instructions.RegisterB},
 		},
 		// ins 0xbb
 		{
-			input:  tokens(tokenText(text), tokenInt("0xbb"), tokenNL(), tokenEOF()),
+			input:  tokens(tokenInstruction(text), tokenInt("0xbb"), tokenNL(), tokenEOF()),
 			output: []byte{ins, instructions.Immediate, 0xbb},
 		},
 	}
@@ -83,18 +88,18 @@ var singleOperandInstructionTestCases = []parserTestCase{
 var movTestCases = []parserTestCase{
 	// mov 0xab, A
 	{
-		input:  tokens(tokenText("mov"), tokenInt("0xab"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("mov"), tokenInt("0xab"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Mov, instructions.AddressingModeImmediate, 0xab, instructions.RegisterA},
 	},
 	// mov fp, A
 	{
-		input:  tokens(tokenText("mov"), tokenText("fp"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("mov"), tokenText("fp"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Mov, instructions.FramePointerWithOffset, 0x0, instructions.RegisterA},
 	},
 	// mov (fp+1), A
 	{
 		input: tokens(
-			tokenText("mov"),
+			tokenInstruction("mov"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypePlus, "+"),
@@ -110,7 +115,7 @@ var movTestCases = []parserTestCase{
 	// mov (fp-1), B
 	{
 		input: tokens(
-			tokenText("mov"),
+			tokenInstruction("mov"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeMinus, "-"),
@@ -126,7 +131,7 @@ var movTestCases = []parserTestCase{
 	// mov (fp[3]), B
 	{
 		input: tokens(
-			tokenText("mov"),
+			tokenInstruction("mov"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeLeftBracket, "["),
@@ -142,7 +147,7 @@ var movTestCases = []parserTestCase{
 	},
 	// mov (fp[+3]), A
 	{
-		input: tokens(tokenText("mov"),
+		input: tokens(tokenInstruction("mov"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeLeftBracket, "["),
@@ -158,7 +163,7 @@ var movTestCases = []parserTestCase{
 	},
 	// mov (fp[-3]), A
 	{
-		input: tokens(tokenText("mov"),
+		input: tokens(tokenInstruction("mov"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeLeftBracket, "["),
@@ -186,13 +191,13 @@ var movTestCases = []parserTestCase{
 var loadTestCases = []parserTestCase{
 	// load 0xae, A
 	{
-		input:  tokens(tokenText("load"), tokenInt("0xae"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("load"), tokenInt("0xae"), tokenComma(), tokenText("A"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Load, 0x00, 0xae, instructions.Immediate, 0x0, instructions.RegisterA},
 	},
 	// load 0xaecd, B
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenInt("0xaecd"),
 			tokenComma(),
 			tokenText("B"),
@@ -204,7 +209,7 @@ var loadTestCases = []parserTestCase{
 	// load (fp + 5), A
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypePlus, "+"),
@@ -220,7 +225,7 @@ var loadTestCases = []parserTestCase{
 	// load (fp + 5), A
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypePlus, "+"),
@@ -236,7 +241,7 @@ var loadTestCases = []parserTestCase{
 	// load (fp[5]), A
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeLeftBracket, "["),
@@ -253,7 +258,7 @@ var loadTestCases = []parserTestCase{
 	// load (fp[-1]), B
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeLeftBracket, "["),
@@ -271,7 +276,7 @@ var loadTestCases = []parserTestCase{
 	// load (fp - A), A
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeMinus, "-"),
@@ -287,7 +292,7 @@ var loadTestCases = []parserTestCase{
 	//  load (fp - 1), A
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenLParen(),
 			tokenText("fp"),
 			token(lexer_rewrite.TokenTypeMinus, "-"),
@@ -303,7 +308,7 @@ var loadTestCases = []parserTestCase{
 	//  load fp, A
 	{
 		input: tokens(
-			tokenText("load"),
+			tokenInstruction("load"),
 			tokenText("fp"),
 			tokenComma(),
 			tokenText("A"),
@@ -328,18 +333,18 @@ var loadTestCases = []parserTestCase{
 var storeTestCases = []parserTestCase{
 	// store A, 0xabcd
 	{
-		input:  tokens(tokenText("store"), tokenText("A"), tokenComma(), tokenInt("0xabcd"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("store"), tokenText("A"), tokenComma(), tokenInt("0xabcd"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Store, instructions.RegisterA, instructions.Immediate, 0x0, 0xab, 0xcd},
 	},
 	// store B, fp
 	{
-		input:  tokens(tokenText("store"), tokenText("B"), tokenComma(), tokenText("fp"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("store"), tokenText("B"), tokenComma(), tokenText("fp"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Store, instructions.RegisterB, instructions.FramePointerWithOffset, 0x0, 0x0, 0x0},
 	},
 	// store A, (fp + B)
 	{
 		input: tokens(
-			tokenText("store"),
+			tokenInstruction("store"),
 			tokenText("A"),
 			tokenComma(),
 			tokenLParen(),
@@ -355,7 +360,7 @@ var storeTestCases = []parserTestCase{
 	// store B, (fp - A)
 	{
 		input: tokens(
-			tokenText("store"),
+			tokenInstruction("store"),
 			tokenText("B"),
 			tokenComma(),
 			tokenLParen(),
@@ -371,7 +376,7 @@ var storeTestCases = []parserTestCase{
 	// store B, (fp + 3)
 	{
 		input: tokens(
-			tokenText("store"),
+			tokenInstruction("store"),
 			tokenText("B"),
 			tokenComma(),
 			tokenLParen(),
@@ -387,7 +392,7 @@ var storeTestCases = []parserTestCase{
 	// store A, (fp - 1)
 	{
 		input: tokens(
-			tokenText("store"),
+			tokenInstruction("store"),
 			tokenText("A"),
 			tokenComma(),
 			tokenLParen(),
@@ -403,7 +408,7 @@ var storeTestCases = []parserTestCase{
 	// store A, (fp[3])
 	{
 		input: tokens(
-			tokenText("store"),
+			tokenInstruction("store"),
 			tokenText("A"),
 			tokenComma(),
 			tokenLParen(),
@@ -420,7 +425,7 @@ var storeTestCases = []parserTestCase{
 	// store A, (fp[+3])
 	{
 		input: tokens(
-			tokenText("store"),
+			tokenInstruction("store"),
 			tokenText("A"),
 			tokenComma(),
 			tokenLParen(),
@@ -438,7 +443,7 @@ var storeTestCases = []parserTestCase{
 	// store A, (fp[-1])
 	{
 		input: tokens(
-			tokenText("store"),
+			tokenInstruction("store"),
 			tokenText("A"),
 			tokenComma(),
 			tokenLParen(),
@@ -459,12 +464,12 @@ var storeTestCases = []parserTestCase{
 var callTestCases = []parserTestCase{
 	// call 0xba
 	{
-		input:  tokens(tokenText("call"), tokenInt("0xba"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("call"), tokenInt("0xba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Call, 0x00, 0xba},
 	},
 	// call 0xcdba
 	{
-		input:  tokens(tokenText("call"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("call"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Call, 0xcd, 0xba},
 	},
 }
@@ -472,33 +477,70 @@ var callTestCases = []parserTestCase{
 var jumpTestCases = []parserTestCase{
 	// jump 0xba
 	{
-		input:  tokens(tokenText("jump"), tokenInt("0xba"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("jump"), tokenInt("0xba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Jump, 0x00, 0xba},
 	},
 	// jump 0xcdba
 	{
-		input:  tokens(tokenText("jump"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("jump"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Jump, 0xcd, 0xba},
 	},
-	// jump 0xba
+	// jump test_label
 	{
-		input:  tokens(tokenText("jumpz"), tokenInt("0xba"), tokenNL(), tokenEOF()),
+		input: tokens(
+			tokenInstruction("jump"),
+			tokenText("test_label"),
+			tokenNL(),
+			// label
+			token(lexer_rewrite.TokenTypeLabel, "test_label"),
+			tokenInstruction("add"),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Jump, 0, 3, instructions.Add, instructions.Register, instructions.RegisterB},
+	},
+	// jump test_label, label def has newline
+	{
+		input: tokens(
+			tokenInstruction("jump"),
+			tokenText("test_label"),
+			tokenNL(),
+			// label
+			token(lexer_rewrite.TokenTypeLabel, "test_label"),
+			tokenNL(),
+			tokenInstruction("add"),
+			tokenNL(),
+			tokenEOF(),
+		),
+		output: []byte{instructions.Jump, 0, 3, instructions.Add, instructions.Register, instructions.RegisterB},
+	},
+	// jumpz 0xba
+	{
+		input:  tokens(tokenInstruction("jumpz"), tokenInt("0xba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Jumpz, 0x00, 0xba},
 	},
-	// jump 0xcdba
+	// jumpz 0xcdba
 	{
-		input:  tokens(tokenText("jumpz"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("jumpz"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Jumpz, 0xcd, 0xba},
 	},
-	// jump 0xba
+	// jumpnz 0xba
 	{
-		input:  tokens(tokenText("jumpnz"), tokenInt("0xba"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("jumpnz"), tokenInt("0xba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Jumpnz, 0x00, 0xba},
 	},
-	// jump 0xcdba
+	// jumpnz 0xcdba
 	{
-		input:  tokens(tokenText("jumpnz"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
+		input:  tokens(tokenInstruction("jumpnz"), tokenInt("0xcdba"), tokenNL(), tokenEOF()),
 		output: []byte{instructions.Jumpnz, 0xcd, 0xba},
+	},
+}
+
+var labelTestCases = []parserTestCase{
+	{input: tokens(token(lexer_rewrite.TokenTypeLabel, "label"), tokenNL()), output: []byte{}},
+	{
+		input:  tokens(token(lexer_rewrite.TokenTypeLabel, "label"), tokenNL(), tokenInstruction("add"), tokenNL()),
+		output: newAritmeticLogicInstructionTest("add", instructions.Add)[0].output,
 	},
 }
 
@@ -528,10 +570,16 @@ func TestParser(t *testing.T) {
 	parserTestCases = append(parserTestCases, jumpTestCases...)
 	parserTestCases = append(parserTestCases, loadTestCases...)
 	parserTestCases = append(parserTestCases, storeTestCases...)
+	parserTestCases = append(parserTestCases, labelTestCases...)
 
 	for _, tc := range parserTestCases {
 		p := NewParser()
-		p.Load(tc.input)
+
+		files := map[string][]lexer_rewrite.Token{
+			"main": tc.input,
+		}
+
+		p.Load("main", files)
 		out, err := p.Run()
 		if err != nil {
 			t.Errorf("%s\nwith input:\n %v", err, tc.input)

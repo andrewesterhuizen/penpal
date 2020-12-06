@@ -20,29 +20,46 @@ func getRegister(r string) (byte, error) {
 
 func (p *Parser) parseNoOperandInstruction(instruction byte) error {
 	p.addByte(instruction)
-	return p.expect(lexer_rewrite.TokenTypeNewLine)
+	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)
+	return err
 }
 
 func (p *Parser) parseAddressInstruction(instruction byte) error {
 	p.addByte(instruction)
 
-	it, err := p.expectAndGet(lexer_rewrite.TokenTypeInteger)
-	if err != nil {
-		return err
+	t := p.nextToken()
+
+	var addr uint16
+
+	switch t.Type {
+	case lexer_rewrite.TokenTypeInteger:
+		i, err := parseIntegerToken(t)
+		if err != nil {
+			return err
+		}
+
+		addr = uint16(i)
+
+	case lexer_rewrite.TokenTypeText:
+		i, exists := p.labels[t.Value]
+		if !exists {
+			return fmt.Errorf("no definitions found for label %s", t.Value)
+		}
+
+		addr = i
+
+	default:
+		return fmt.Errorf("unexpected token %s", t.Value)
 	}
 
-	i, err := parseIntegerToken(it)
-	if err != nil {
-		return err
-	}
-
-	h := (i & 0xff00) >> 8
-	l := i & 0xff
+	h := (addr & 0xff00) >> 8
+	l := addr & 0xff
 
 	p.addByte(byte(h))
 	p.addByte(byte(l))
 
-	return p.expect(lexer_rewrite.TokenTypeNewLine)
+	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)
+	return err
 }
 
 // encoding = instruction, (immediate mode|register mode), (immediate value|register number)
@@ -72,16 +89,17 @@ func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
 		return fmt.Errorf("unexpected operand \"%s\"", op1.Value)
 	}
 
-	return p.expect(lexer_rewrite.TokenTypeNewLine)
+	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)
+	return err
 }
 
 func (p *Parser) parseOffsetAddress() (byte, byte, error) {
-	err := p.expect(lexer_rewrite.TokenTypeLeftParen)
+	_, err := p.expect(lexer_rewrite.TokenTypeLeftParen)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	register, err := p.expectAndGet(lexer_rewrite.TokenTypeText)
+	register, err := p.expect(lexer_rewrite.TokenTypeText)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -165,13 +183,13 @@ func (p *Parser) parseOffsetAddress() (byte, byte, error) {
 
 		// if current token isn't the integer then it must be the next token
 		if t.Type != lexer_rewrite.TokenTypeInteger {
-			t, err = p.expectAndGet(lexer_rewrite.TokenTypeInteger)
+			t, err = p.expect(lexer_rewrite.TokenTypeInteger)
 			if err != nil {
 				return 0, 0, err
 			}
 		}
 
-		err = p.expect(lexer_rewrite.TokenTypeRightBracket)
+		_, err = p.expect(lexer_rewrite.TokenTypeRightBracket)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -276,7 +294,7 @@ func (p *Parser) parseMov() error {
 		return fmt.Errorf("unexpected token \"%s\"", t.Value)
 	}
 
-	err := p.expect(lexer_rewrite.TokenTypeComma)
+	_, err := p.expect(lexer_rewrite.TokenTypeComma)
 	if err != nil {
 		return err
 	}
@@ -294,7 +312,8 @@ func (p *Parser) parseMov() error {
 
 	p.addByte(reg)
 
-	return p.expect(lexer_rewrite.TokenTypeNewLine)
+	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
+	return err
 }
 
 // instructions.Load, addressh, addressl, mode, offset, dest reg
@@ -313,7 +332,7 @@ func (p *Parser) parseLoad() error {
 	p.addByte(modeArg)
 
 	// ,
-	err = p.expect(lexer_rewrite.TokenTypeComma)
+	_, err = p.expect(lexer_rewrite.TokenTypeComma)
 	if err != nil {
 		return err
 	}
@@ -331,7 +350,8 @@ func (p *Parser) parseLoad() error {
 
 	p.addByte(reg)
 
-	return p.expect(lexer_rewrite.TokenTypeNewLine)
+	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
+	return err
 }
 
 // instructions.Store, dest reg, mode, offset, addressh, addressl
@@ -352,7 +372,7 @@ func (p *Parser) parseStore() error {
 	p.addByte(reg)
 
 	// ,
-	err = p.expect(lexer_rewrite.TokenTypeComma)
+	_, err = p.expect(lexer_rewrite.TokenTypeComma)
 	if err != nil {
 		return err
 	}
@@ -368,5 +388,6 @@ func (p *Parser) parseStore() error {
 	p.addByte(h)
 	p.addByte(l)
 
-	return p.expect(lexer_rewrite.TokenTypeNewLine)
+	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
+	return err
 }
