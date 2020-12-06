@@ -15,17 +15,17 @@ type testCase struct {
 }
 
 var testCases = []testCase{
-	{"add\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 5\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 0xbb\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0xbb"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 0x5f\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0x5f"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 0b101\n", []Token{newToken(TokenTypeText, "add"), newToken(TokenTypeInteger, "0b101"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"mov 23\n", []Token{newToken(TokenTypeText, "mov"), newToken(TokenTypeInteger, "23"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"mov label\n", []Token{newToken(TokenTypeText, "mov"), newToken(TokenTypeText, "label"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"add\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"add 5\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"add 0xbb\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "0xbb"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"add 0x5f\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "0x5f"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"add 0b101\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "0b101"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"mov 23\n", []Token{newToken(TokenTypeInstruction, "mov"), newToken(TokenTypeInteger, "23"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"mov label\n", []Token{newToken(TokenTypeInstruction, "mov"), newToken(TokenTypeText, "label"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{
 		"mov 11, A\n",
 		[]Token{
-			newToken(TokenTypeText, "mov"),
+			newToken(TokenTypeInstruction, "mov"),
 			newToken(TokenTypeInteger, "11"),
 			newToken(TokenTypeComma, ","),
 			newToken(TokenTypeText, "A"),
@@ -37,7 +37,7 @@ var testCases = []testCase{
 	{
 		"mov (fp)\n",
 		[]Token{
-			newToken(TokenTypeText, "mov"),
+			newToken(TokenTypeInstruction, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "fp"),
 			newToken(TokenTypeRightParen, ")"),
@@ -48,7 +48,7 @@ var testCases = []testCase{
 	{
 		"mov (label[3])\n",
 		[]Token{
-			newToken(TokenTypeText, "mov"),
+			newToken(TokenTypeInstruction, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "label"),
 			newToken(TokenTypeLeftBracket, "["),
@@ -62,7 +62,7 @@ var testCases = []testCase{
 	{
 		"mov (fp+1)\n",
 		[]Token{
-			newToken(TokenTypeText, "mov"),
+			newToken(TokenTypeInstruction, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "fp"),
 			newToken(TokenTypePlus, "+"),
@@ -75,7 +75,7 @@ var testCases = []testCase{
 	{
 		"mov (fp+1), B\n",
 		[]Token{
-			newToken(TokenTypeText, "mov"),
+			newToken(TokenTypeInstruction, "mov"),
 			newToken(TokenTypeLeftParen, "("),
 			newToken(TokenTypeText, "fp"),
 			newToken(TokenTypePlus, "+"),
@@ -90,12 +90,12 @@ var testCases = []testCase{
 	{
 		"mov A, 67\nadd 13\n",
 		[]Token{
-			newToken(TokenTypeText, "mov"),
+			newToken(TokenTypeInstruction, "mov"),
 			newToken(TokenTypeText, "A"),
 			newToken(TokenTypeComma, ","),
 			newToken(TokenTypeInteger, "67"),
 			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeText, "add"),
+			newToken(TokenTypeInstruction, "add"),
 			newToken(TokenTypeInteger, "13"),
 			newToken(TokenTypeNewLine, "\n"),
 			newToken(TokenTypeEndOfFile, ""),

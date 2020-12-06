@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+
+	"github.com/andrewesterhuizen/penpal/instructions"
 )
 
 const (
 	TokenTypeEndOfFile TokenType = iota
 	TokenTypeNewLine
 	TokenTypeText
+	TokenTypeInstruction
 	TokenTypeDefine
 	TokenTypeFileInclude
 	TokenTypeSystemInclude
@@ -41,6 +44,8 @@ func (t TokenType) String() string {
 		return "NewLine"
 	case TokenTypeText:
 		return "Text"
+	case TokenTypeInstruction:
+		return "Instruction"
 	case TokenTypeInteger:
 		return "Integer"
 	case TokenTypePlus:
@@ -224,6 +229,10 @@ func (l *Lexer) peek() rune {
 	return rune(l.input[nextPos])
 }
 
+func (l *Lexer) getText() string {
+	return l.input[l.start:l.pos]
+}
+
 func (l *Lexer) addToken(tokenType TokenType) {
 	v := l.input[l.start:l.pos]
 	t := Token{Type: tokenType, Value: v, Line: l.line, Column: l.pos - l.startOfLine - len(v)}
@@ -241,6 +250,14 @@ func (l *Lexer) lexText() {
 	if r == ':' {
 		l.addToken(TokenTypeLabel)
 		l.pos++
+		return
+	}
+
+	text := l.getText()
+
+	_, isInstruction := instructions.InstructionByName[text]
+	if isInstruction {
+		l.addToken(TokenTypeInstruction)
 		return
 	}
 
