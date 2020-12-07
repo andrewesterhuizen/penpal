@@ -33,16 +33,18 @@ const (
 
 	Value                     = 0x0 // TODO: remove this one when it is no longer used
 	Immediate                 = 0x0
-	Register                  = 0x1
-	FramePointerWithOffset    = 0x2
-	FramePointerPlusRegister  = 0x3
-	FramePointerMinusRegister = 0x4
+	ImmediatePlusRegister     = 0x1
+	ImmediateMinusRegister    = 0x2
+	Register                  = 0x3
+	FramePointerWithOffset    = 0x4
+	FramePointerPlusRegister  = 0x5
+	FramePointerMinusRegister = 0x6
 
-	RegisterA = 0x0
-	RegisterB = 0x1
+	RegisterA = 0x7
+	RegisterB = 0x8
 
-	AddressingModeImmediate  = 0x0
-	AddressingModeFPRelative = 0x1
+	AddressingModeImmediate  = 0x9
+	AddressingModeFPRelative = 0xa
 )
 
 var Names = map[uint8]string{

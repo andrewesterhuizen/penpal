@@ -64,6 +64,48 @@ var loadTestCases = []parserTestCase{
 		input:  "load fp, A",
 		output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x0, instructions.RegisterA},
 	},
+	{
+		input: `
+		test_label: db 1
+
+		load (test_label + 6), A`,
+		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.Immediate, 6, instructions.RegisterA},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		load (test_label - 1), A`,
+		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.Immediate, 0xff, instructions.RegisterA},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		load (test_label[3]), A`,
+		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.Immediate, 3, instructions.RegisterA},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		load (test_label + A), B`,
+		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.ImmediatePlusRegister, instructions.RegisterA, instructions.RegisterB},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		load (test_label - A), B`,
+		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.ImmediateMinusRegister, instructions.RegisterA, instructions.RegisterB},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		load (test_label[A]), B`,
+		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.ImmediatePlusRegister, instructions.RegisterA, instructions.RegisterB},
+	},
 }
 
 var storeTestCases = []parserTestCase{
@@ -94,6 +136,34 @@ var storeTestCases = []parserTestCase{
 	{
 		input:  "store A, (fp[3])",
 		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0x3, 0x0, 0x0},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		store B, (test_label + 3)`,
+		output: []byte{1, instructions.Store, instructions.RegisterB, instructions.Immediate, 0x3, 0x0, 0x0},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		store B, (test_label - 2)`,
+		output: []byte{1, instructions.Store, instructions.RegisterB, instructions.Immediate, 0xfe, 0x0, 0x0},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		store B, (test_label[5])`,
+		output: []byte{1, instructions.Store, instructions.RegisterB, instructions.Immediate, 0x5, 0x0, 0x0},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		store B, (test_label[B])`,
+		output: []byte{1, instructions.Store, instructions.RegisterB, instructions.ImmediatePlusRegister, instructions.RegisterB, 0x0, 0x0},
 	},
 }
 
@@ -260,7 +330,7 @@ func TestParser(t *testing.T) {
 
 		for i, ins := range tc.output {
 			if ins != out[i] {
-				t.Errorf("expected byte 0x%02x and got 0x%02x", ins, out[i])
+				t.Errorf("expected byte 0x%02x and got 0x%02x in %d position\nwith input:\n %v", ins, out[i], i, tc.input)
 			}
 
 		}

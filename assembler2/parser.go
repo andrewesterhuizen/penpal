@@ -63,6 +63,18 @@ func (p *Parser) expect(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) 
 	return n, nil
 }
 
+func (p *Parser) expectRange(types []lexer_rewrite.TokenType) (lexer_rewrite.Token, error) {
+	n := p.nextToken()
+
+	for _, t := range types {
+		if n.Type == t {
+			return n, nil
+		}
+	}
+
+	return n, fmt.Errorf("unexpected token %s", n.Value)
+}
+
 func (p *Parser) skipIf(t lexer_rewrite.TokenType) {
 	n := p.nextToken()
 	if n.Type != t {
