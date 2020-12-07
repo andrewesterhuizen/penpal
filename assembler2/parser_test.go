@@ -53,24 +53,12 @@ var loadTestCases = []parserTestCase{
 		output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x5, instructions.RegisterA},
 	},
 	{
-		input:  "load (fp + 5), A",
-		output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x5, instructions.RegisterA},
-	},
-	{
 		input:  "load (fp[5]), A",
 		output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0x5, instructions.RegisterA},
 	},
 	{
-		input:  "load (fp[-1]), B",
-		output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0xff, instructions.RegisterB},
-	},
-	{
 		input:  "load (fp - A), A",
 		output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerMinusRegister, instructions.RegisterA, instructions.RegisterA},
-	},
-	{
-		input:  "load (fp - 1), A",
-		output: []byte{instructions.Load, 0x00, 0x00, instructions.FramePointerWithOffset, 0xff, instructions.RegisterA},
 	},
 	{
 		input:  "load fp, A",
@@ -106,14 +94,6 @@ var storeTestCases = []parserTestCase{
 	{
 		input:  "store A, (fp[3])",
 		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0x3, 0x0, 0x0},
-	},
-	{
-		input:  "store A, (fp[+3])",
-		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0x3, 0x0, 0x0},
-	},
-	{
-		input:  "store A, (fp[-1])",
-		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0xff, 0x0, 0x0},
 	},
 }
 

@@ -221,24 +221,9 @@ func (p *Parser) parseOffsetAddress() (byte, byte, error) {
 		}
 
 	case lexer_rewrite.TokenTypeLeftBracket:
-		t := p.nextToken()
-
-		// default to +
-		operator := lexer_rewrite.TokenTypePlus
-
-		// valid next tokens are, +, - or the integer
-
-		// check if token is - for inverting later
-		if t.Type == lexer_rewrite.TokenTypeMinus {
-			operator = lexer_rewrite.TokenTypeMinus
-		}
-
-		// if current token isn't the integer then it must be the next token
-		if t.Type != lexer_rewrite.TokenTypeInteger {
-			t, err = p.expect(lexer_rewrite.TokenTypeInteger)
-			if err != nil {
-				return 0, 0, err
-			}
+		t, err := p.expect(lexer_rewrite.TokenTypeInteger)
+		if err != nil {
+			return 0, 0, err
 		}
 
 		_, err = p.expect(lexer_rewrite.TokenTypeRightBracket)
@@ -251,14 +236,7 @@ func (p *Parser) parseOffsetAddress() (byte, byte, error) {
 			return 0, 0, err
 		}
 
-		if operator == lexer_rewrite.TokenTypeMinus {
-			nsigned := int8(n) * int8(-1)
-			modeArg = byte(nsigned)
-
-		} else {
-			modeArg = byte(n)
-		}
-
+		modeArg = byte(n)
 	default:
 		return 0, 0, fmt.Errorf("unexpected token \"%s\"", next.Value)
 	}
