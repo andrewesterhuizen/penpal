@@ -137,6 +137,7 @@ func executeProgramFromFile(filename string) {
 			case <-ticker.C:
 				if vm.Halted {
 					vm.PrintReg()
+					vm.PrintMem(0, 16)
 					done <- true
 					return
 				}

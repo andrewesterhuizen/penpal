@@ -1,5 +1,9 @@
+here:
+    db 0xaa
+    db 0xcc
+
 __start:
-    mov A, 11
-    store A, 0
-    halt
+    mov A, 2
+    load (here[A]), B
+    halt  
 

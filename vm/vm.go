@@ -39,6 +39,30 @@ func (vm *VM) init() {
 	vm.fp = memorySize - 1
 }
 
+func (vm *VM) getValueInRegister(r byte) byte {
+	switch r {
+	case instructions.RegisterA:
+		return vm.a
+	case instructions.RegisterB:
+		return vm.b
+	default:
+		log.Fatalf("unknown register 0x%02x", r)
+		return 0
+	}
+}
+
+func (vm *VM) getRegister(r byte) *byte {
+	switch r {
+	case instructions.RegisterA:
+		return &vm.a
+	case instructions.RegisterB:
+		return &vm.b
+	default:
+		log.Fatalf("unknown register 0x%02x", r)
+		return &vm.a
+	}
+}
+
 func (vm *VM) push(value uint8) {
 	vm.memory[vm.sp] = value
 	vm.sp--
@@ -77,9 +101,7 @@ func (vm *VM) fetch16() uint16 {
 	return (h << 8) | l
 }
 
-func (vm *VM) getFramePointerRelativeAddress(offset int8) uint16 {
-	addr := vm.fp
-
+func (vm *VM) getRelativeAddress(addr uint16, offset int8) uint16 {
 	if offset >= 0 {
 		addr += uint16(offset)
 	} else {
@@ -88,6 +110,10 @@ func (vm *VM) getFramePointerRelativeAddress(offset int8) uint16 {
 	}
 
 	return addr
+}
+
+func (vm *VM) getFramePointerRelativeAddress(offset int8) uint16 {
+	return vm.getRelativeAddress(vm.fp, offset)
 }
 
 func (vm *VM) saveState(interupt bool) {
@@ -173,96 +199,80 @@ func (vm *VM) execute(instruction uint8) {
 		register := vm.fetch()
 		value := vm.fetch()
 
-		switch register {
-		case instructions.RegisterA:
-			vm.a = value
-		case instructions.RegisterB:
-			vm.b = value
-		default:
-			log.Fatalf("register %d does not exist", register)
-		}
+		dest := vm.getRegister(register)
+		*dest = value
 
 		vm.ip++
 
 	case instructions.Store:
+		srcRegister := vm.fetch()
 		mode := vm.fetch()
 		modeArg := vm.fetch()
-
-		var value byte
-
-		switch mode {
-		case instructions.FramePointerWithOffset:
-			addr := vm.getFramePointerRelativeAddress(int8(modeArg))
-			value = vm.memory[addr]
-		case instructions.Register:
-			switch modeArg {
-			case instructions.RegisterA:
-				value = vm.a
-			case instructions.RegisterB:
-				value = vm.b
-			default:
-				log.Fatalf("store: encountered unknown register source 0x%02x", mode)
-			}
-
-		default:
-			log.Fatalf("store: encountered unknown addressing mode 0x%02x", mode)
-		}
-
-		addr := vm.fetch16()
-		vm.memory[addr] = value
-		vm.ip++
-
-	case instructions.Load:
-
-		// 		addressh addressl (Immediate|FramePointerWithOffset) offset (dest reg)
-
 		addr := vm.fetch16()
 
-		mode := vm.fetch()
-		modeArg := vm.fetch()
-
-		destRegister := vm.fetch()
-		var dest *uint8
-
-		switch destRegister {
-		case instructions.RegisterA:
-			dest = &vm.a
-		case instructions.RegisterB:
-			dest = &vm.b
-		default:
-			log.Fatalf("register %d does not exist", destRegister)
-		}
+		value := vm.getValueInRegister(srcRegister)
 
 		switch mode {
 		case instructions.Immediate:
-			*dest = vm.memory[addr]
+			vm.memory[vm.getRelativeAddress(addr, int8(modeArg))] = value
+
+		case instructions.ImmediatePlusRegister:
+			offset := vm.getValueInRegister(modeArg)
+			vm.memory[addr+uint16(offset)] = value
+
+		case instructions.ImmediateMinusRegister:
+			offset := vm.getValueInRegister(modeArg)
+			vm.memory[addr-uint16(offset)] = value
 
 		case instructions.FramePointerWithOffset:
-			fpreladdr := vm.getFramePointerRelativeAddress(int8(modeArg))
-			*dest = vm.memory[fpreladdr]
+			vm.memory[vm.getFramePointerRelativeAddress(int8(modeArg))] = value
 
 		case instructions.FramePointerPlusRegister:
-			switch modeArg {
-			case instructions.RegisterA:
-				*dest = vm.memory[vm.fp+uint16(vm.a)]
-			case instructions.RegisterB:
-				*dest = vm.memory[vm.fp+uint16(vm.b)]
-			default:
-				log.Fatalf("register %d does not exist", modeArg)
-			}
+			a := vm.fp + uint16(vm.getValueInRegister(modeArg))
+			vm.memory[a] = value
 
 		case instructions.FramePointerMinusRegister:
-			switch modeArg {
-			case instructions.RegisterA:
-				*dest = vm.memory[vm.fp-uint16(vm.a)]
-			case instructions.RegisterB:
-				*dest = vm.memory[vm.fp-uint16(vm.b)]
-			default:
-				log.Fatalf("register %d does not exist", modeArg)
-			}
+			a := vm.fp - uint16(vm.getValueInRegister(modeArg))
+			vm.memory[a] = value
 
 		default:
-			log.Fatalf("load: encountered unknown addressing mode 0x%02x", mode)
+			log.Fatalf("encountered unknown addressing mode 0x%02x", mode)
+		}
+
+		vm.ip++
+
+	case instructions.Load:
+		addr := vm.fetch16()
+		mode := vm.fetch()
+		modeArg := vm.fetch()
+		destRegister := vm.fetch()
+
+		dest := vm.getRegister(destRegister)
+
+		switch mode {
+		case instructions.Immediate:
+			*dest = vm.memory[vm.getRelativeAddress(addr, int8(modeArg))]
+
+		case instructions.ImmediatePlusRegister:
+			offset := vm.getValueInRegister(modeArg)
+			*dest = vm.memory[addr+uint16(offset)]
+
+		case instructions.ImmediateMinusRegister:
+			offset := vm.getValueInRegister(modeArg)
+			*dest = vm.memory[addr-uint16(offset)]
+
+		case instructions.FramePointerWithOffset:
+			*dest = vm.memory[vm.getFramePointerRelativeAddress(int8(modeArg))]
+
+		case instructions.FramePointerPlusRegister:
+			a := vm.fp + uint16(vm.getValueInRegister(modeArg))
+			*dest = vm.memory[a]
+
+		case instructions.FramePointerMinusRegister:
+			a := vm.fp - uint16(vm.getValueInRegister(modeArg))
+			*dest = vm.memory[a]
+		default:
+			log.Fatalf("encountered unknown addressing mode 0x%02x", mode)
 		}
 
 		vm.ip++
@@ -345,23 +355,18 @@ func (vm *VM) execute(instruction uint8) {
 
 	case instructions.Push:
 		mode := vm.fetch()
-		value := vm.fetch()
+		modeArg := vm.fetch()
 
 		switch mode {
 		case instructions.Register:
-			switch value {
-			case instructions.RegisterA:
-				vm.push(vm.a)
-			case instructions.RegisterB:
-				vm.push(vm.b)
-			default:
-				log.Fatalf("push: encountered unknown register 0x%02x\n", value)
-			}
+			vm.push(vm.getValueInRegister(modeArg))
 		case instructions.FramePointerWithOffset:
-			addr := vm.getFramePointerRelativeAddress(int8(value))
+			addr := vm.getFramePointerRelativeAddress(int8(modeArg))
 			vm.push(vm.memory[addr])
-		case instructions.Value:
-			vm.push(value)
+
+		case instructions.Immediate:
+			vm.push(modeArg)
+
 		default:
 			log.Fatalf("push: encountered unknown mode 0x%02x\n", mode)
 		}
