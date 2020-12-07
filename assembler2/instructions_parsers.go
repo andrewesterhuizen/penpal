@@ -37,8 +37,8 @@ func (p *Parser) parseDB() error {
 
 	p.addByte(byte(n))
 
-	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
-	return err
+	p.skipIf(lexer_rewrite.TokenTypeNewLine)
+	return nil
 }
 
 func (p *Parser) parseAddressInstruction(instruction byte) error {
@@ -75,8 +75,8 @@ func (p *Parser) parseAddressInstruction(instruction byte) error {
 	p.addByte(byte(h))
 	p.addByte(byte(l))
 
-	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)
-	return err
+	p.skipIf(lexer_rewrite.TokenTypeNewLine)
+	return nil
 }
 
 // func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
@@ -135,8 +135,8 @@ func (p *Parser) parsePushInstruction() error {
 		return fmt.Errorf("unexpected operand \"%s\"", t.Value)
 	}
 
-	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)
-	return err
+	p.skipIf(lexer_rewrite.TokenTypeNewLine)
+	return nil
 }
 
 func (p *Parser) parseOffsetAddress() (byte, byte, error) {
@@ -332,8 +332,8 @@ func (p *Parser) parseMov() error {
 
 	p.addByte(byte(n))
 
-	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
-	return err
+	p.skipIf(lexer_rewrite.TokenTypeNewLine)
+	return nil
 }
 
 func (p *Parser) parseLoad() error {
@@ -369,8 +369,8 @@ func (p *Parser) parseLoad() error {
 
 	p.addByte(reg)
 
-	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
-	return err
+	p.skipIf(lexer_rewrite.TokenTypeNewLine)
+	return nil
 }
 
 func (p *Parser) parseStore() error {
@@ -407,6 +407,6 @@ func (p *Parser) parseStore() error {
 	p.addByte(h)
 	p.addByte(l)
 
-	_, err = p.expect(lexer_rewrite.TokenTypeNewLine)
-	return err
+	p.skipIf(lexer_rewrite.TokenTypeNewLine)
+	return nil
 }

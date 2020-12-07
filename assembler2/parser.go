@@ -62,6 +62,14 @@ func (p *Parser) expect(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) 
 
 	return n, nil
 }
+
+func (p *Parser) skipIf(t lexer_rewrite.TokenType) {
+	n := p.nextToken()
+	if n.Type != t {
+		p.backup()
+	}
+}
+
 func (p *Parser) peek() lexer_rewrite.Token {
 	nextIndex := p.index + 1
 
