@@ -360,5 +360,5 @@ func isAlphaNumeric(r rune) bool {
 }
 
 func isHex(r rune) bool {
-	return unicode.IsDigit(r) || strings.IndexRune("abcdef", r) > 0
+	return unicode.IsDigit(r) || strings.IndexRune("abcdef", r) >= 0
 }

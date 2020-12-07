@@ -118,6 +118,15 @@ var testCases = []testCase{
 			newToken(TokenTypeEndOfFile, ""),
 		},
 	},
+	{
+		"push 0xae\n",
+		[]Token{
+			newToken(TokenTypeInstruction, "push"),
+			newToken(TokenTypeInteger, "0xae"),
+			newToken(TokenTypeNewLine, "\n"),
+			newToken(TokenTypeEndOfFile, ""),
+		},
+	},
 }
 
 func TestLexer(t *testing.T) {
