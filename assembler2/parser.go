@@ -92,6 +92,15 @@ func (p *Parser) peek() lexer_rewrite.Token {
 	return p.tokens[nextIndex]
 }
 
+func (p *Parser) getLabelAddress(l string) (uint16, error) {
+	addr, exists := p.labels[l]
+	if !exists {
+		return 0, fmt.Errorf("no definition found for label %s", l)
+	}
+
+	return addr, nil
+}
+
 func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 	switch t.Value {
 	case "swap":

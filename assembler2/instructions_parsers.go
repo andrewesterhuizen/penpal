@@ -330,13 +330,20 @@ func (p *Parser) parseMemoryAddress() (byte, byte, byte, byte, error) {
 		return mode, offset, h, l, nil
 
 	case lexer_rewrite.TokenTypeText:
-		switch t.Value {
-		case "fp":
+		if t.Value == "fp" {
 			return instructions.FramePointerWithOffset, 0, 0, 0, nil
-
-		default:
-			return 0, 0, 0, 0, fmt.Errorf("unknown register \"%s\"", t.Value)
 		}
+
+		addr, err := p.getLabelAddress(t.Value)
+		if err != nil {
+			return 0, 0, 0, 0, err
+		}
+
+		h := byte((addr & 0xff00) >> 8)
+		l := byte(addr & 0xff)
+
+		return instructions.Immediate, 0, h, l, nil
+
 	default:
 		return 0, 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", t.Value)
 	}

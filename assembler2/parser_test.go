@@ -106,6 +106,13 @@ var loadTestCases = []parserTestCase{
 		load (test_label[A]), B`,
 		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.ImmediatePlusRegister, instructions.RegisterA, instructions.RegisterB},
 	},
+	{
+		input: `
+		test_label: db 1
+
+		load test_label, B`,
+		output: []byte{1, instructions.Load, 0x00, 0x00, instructions.Immediate, 0x0, instructions.RegisterB},
+	},
 }
 
 var storeTestCases = []parserTestCase{
@@ -136,6 +143,13 @@ var storeTestCases = []parserTestCase{
 	{
 		input:  "store A, (fp[3])",
 		output: []byte{instructions.Store, instructions.RegisterA, instructions.FramePointerWithOffset, 0x3, 0x0, 0x0},
+	},
+	{
+		input: `
+		test_label: db 1
+
+		store B, test_label`,
+		output: []byte{1, instructions.Store, instructions.RegisterB, instructions.Immediate, 0x0, 0x0, 0x0},
 	},
 	{
 		input: `
