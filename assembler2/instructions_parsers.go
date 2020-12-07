@@ -20,8 +20,8 @@ func getRegister(r string) (byte, error) {
 
 func (p *Parser) parseNoOperandInstruction(instruction byte) error {
 	p.addByte(instruction)
-	_, err := p.expect(lexer_rewrite.TokenTypeNewLine)
-	return err
+	p.skipIf(lexer_rewrite.TokenTypeNewLine)
+	return nil
 }
 
 func (p *Parser) parseDB() error {
@@ -116,6 +116,11 @@ func (p *Parser) parsePushInstruction() error {
 
 	switch t.Type {
 	// no operand = implied A register
+	case lexer_rewrite.TokenTypeEndOfFile:
+		p.addByte(instructions.Register)
+		p.addByte(instructions.RegisterA)
+
+		return nil
 	case lexer_rewrite.TokenTypeNewLine:
 		p.addByte(instructions.Register)
 		p.addByte(instructions.RegisterA)
@@ -132,6 +137,7 @@ func (p *Parser) parsePushInstruction() error {
 		p.addByte(byte(n))
 
 	default:
+		fmt.Println(t)
 		return fmt.Errorf("unexpected operand \"%s\"", t.Value)
 	}
 
