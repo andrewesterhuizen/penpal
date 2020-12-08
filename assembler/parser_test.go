@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/andrewesterhuizen/penpal/instructions"
-	"github.com/andrewesterhuizen/penpal/lexer_rewrite"
 )
 
 type parserTestCase struct {
@@ -328,7 +327,7 @@ func TestParser(t *testing.T) {
 	parserTestCases = append(parserTestCases, pushTestCases...)
 
 	for _, tc := range parserTestCases {
-		l := lexer_rewrite.NewLexer()
+		l := NewLexer()
 		tokens, err := l.Run("", tc.input)
 		if err != nil {
 			t.Errorf("%s\nwith input:\n %v", err, tc.input)

@@ -1,4 +1,4 @@
-package lexer_rewrite
+package assembler
 
 import (
 	"fmt"

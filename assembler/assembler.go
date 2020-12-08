@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-
-	"github.com/andrewesterhuizen/penpal/lexer_rewrite"
 )
 
 type FileGetterFunc func(path string) (string, error)
@@ -30,7 +28,7 @@ type Assembler struct {
 	config               Config
 	getFile              FileGetterFunc
 	systemIncludeSources map[string]string
-	lexer                lexer_rewrite.Lexer
+	lexer                Lexer
 }
 
 func New(config Config) Assembler {
@@ -51,12 +49,12 @@ func New(config Config) Assembler {
 	return a
 }
 
-func (a *Assembler) getIncludeTokens(filename string, tokens []lexer_rewrite.Token) ([]lexer_rewrite.Token, error) {
-	out := []lexer_rewrite.Token{}
+func (a *Assembler) getIncludeTokens(filename string, tokens []Token) ([]Token, error) {
+	out := []Token{}
 
 	for _, t := range tokens {
 		switch t.Type {
-		case lexer_rewrite.TokenTypeFileInclude:
+		case TokenTypeFileInclude:
 			name := t.Value
 
 			// get file
@@ -78,7 +76,7 @@ func (a *Assembler) getIncludeTokens(filename string, tokens []lexer_rewrite.Tok
 			}
 
 			out = append(out, includeTokens...)
-		case lexer_rewrite.TokenTypeSystemInclude:
+		case TokenTypeSystemInclude:
 			name := t.Value
 
 			// get system include source
@@ -101,19 +99,19 @@ func (a *Assembler) getIncludeTokens(filename string, tokens []lexer_rewrite.Tok
 
 			out = append(out, includeTokens...)
 
-		case lexer_rewrite.TokenTypeEndOfFile:
+		case TokenTypeEndOfFile:
 			// skip
 		default:
 			out = append(out, t)
 		}
 	}
 
-	tokens = append(tokens, lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile})
+	tokens = append(tokens, Token{Type: TokenTypeEndOfFile})
 
 	return out, nil
 }
 
-func (a *Assembler) getEntryPointTableTokens() ([]lexer_rewrite.Token, error) {
+func (a *Assembler) getEntryPointTableTokens() ([]Token, error) {
 	buf := bytes.Buffer{}
 	buf.WriteString("jump __start\n")
 
@@ -132,7 +130,7 @@ func (a *Assembler) getEntryPointTableTokens() ([]lexer_rewrite.Token, error) {
 
 func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) {
 	// get tokens for entry point table
-	tokens := []lexer_rewrite.Token{}
+	tokens := []Token{}
 
 	if !a.config.disableEntryPointsTable {
 		entryPointTableTokens, err := a.getEntryPointTableTokens()

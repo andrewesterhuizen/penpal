@@ -5,12 +5,11 @@ import (
 	"strconv"
 
 	"github.com/andrewesterhuizen/penpal/instructions"
-	"github.com/andrewesterhuizen/penpal/lexer_rewrite"
 )
 
 type Parser struct {
 	index               int
-	tokens              []lexer_rewrite.Token
+	tokens              []Token
 	instructions        []byte
 	currentLableAddress uint16
 	labels              map[string]uint16
@@ -22,8 +21,8 @@ func NewParser() *Parser {
 	return &p
 }
 
-func parseIntegerToken(t lexer_rewrite.Token) (uint64, error) {
-	if t.Type != lexer_rewrite.TokenTypeInteger {
+func parseIntegerToken(t Token) (uint64, error) {
+	if t.Type != TokenTypeInteger {
 		return 0, fmt.Errorf("expected token to be integer and got %s", t.Type)
 	}
 
@@ -39,11 +38,11 @@ func (p *Parser) addByte(i byte) {
 	p.instructions = append(p.instructions, i)
 }
 
-func (p *Parser) nextToken() lexer_rewrite.Token {
+func (p *Parser) nextToken() Token {
 	p.index++
 
 	if p.index >= len(p.tokens) {
-		return lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile}
+		return Token{Type: TokenTypeEndOfFile}
 	}
 
 	return p.tokens[p.index]
@@ -54,7 +53,7 @@ func (p *Parser) backup() {
 	return
 }
 
-func (p *Parser) expect(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) {
+func (p *Parser) expect(t TokenType) (Token, error) {
 	n := p.nextToken()
 	if n.Type != t {
 		return n, fmt.Errorf("expected %v and got %v", t, n.Type)
@@ -63,7 +62,7 @@ func (p *Parser) expect(t lexer_rewrite.TokenType) (lexer_rewrite.Token, error) 
 	return n, nil
 }
 
-func (p *Parser) expectRange(types []lexer_rewrite.TokenType) (lexer_rewrite.Token, error) {
+func (p *Parser) expectRange(types []TokenType) (Token, error) {
 	n := p.nextToken()
 
 	for _, t := range types {
@@ -75,18 +74,18 @@ func (p *Parser) expectRange(types []lexer_rewrite.TokenType) (lexer_rewrite.Tok
 	return n, fmt.Errorf("unexpected token %s", n.Value)
 }
 
-func (p *Parser) skipIf(t lexer_rewrite.TokenType) {
+func (p *Parser) skipIf(t TokenType) {
 	n := p.nextToken()
 	if n.Type != t {
 		p.backup()
 	}
 }
 
-func (p *Parser) peek() lexer_rewrite.Token {
+func (p *Parser) peek() Token {
 	nextIndex := p.index + 1
 
 	if nextIndex >= len(p.tokens) {
-		return lexer_rewrite.Token{Type: lexer_rewrite.TokenTypeEndOfFile}
+		return Token{Type: TokenTypeEndOfFile}
 	}
 
 	return p.tokens[nextIndex]
@@ -101,7 +100,7 @@ func (p *Parser) getLabelAddress(l string) (uint16, error) {
 	return addr, nil
 }
 
-func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
+func (p *Parser) parseInstruction(t Token) error {
 	switch t.Value {
 	case "swap":
 		return p.parseNoOperandInstruction(instructions.Swap)
@@ -167,18 +166,18 @@ func (p *Parser) parseInstruction(t lexer_rewrite.Token) error {
 
 }
 
-func (p *Parser) parseToken(t lexer_rewrite.Token) error {
+func (p *Parser) parseToken(t Token) error {
 	var err error
 	switch t.Type {
-	case lexer_rewrite.TokenTypeNewLine:
+	case TokenTypeNewLine:
 		// skip whitespace
-	case lexer_rewrite.TokenTypeInstruction:
+	case TokenTypeInstruction:
 		err = p.parseInstruction(t)
-	case lexer_rewrite.TokenTypeLabel:
+	case TokenTypeLabel:
 		n := p.peek()
 
 		// newline is optional
-		if n.Type == lexer_rewrite.TokenTypeNewLine {
+		if n.Type == TokenTypeNewLine {
 			p.index++
 		}
 
@@ -194,7 +193,7 @@ func (p *Parser) parseToken(t lexer_rewrite.Token) error {
 }
 
 func (p *Parser) parseTokens() error {
-	for t := p.tokens[p.index]; t.Type != lexer_rewrite.TokenTypeEndOfFile; t = p.nextToken() {
+	for t := p.tokens[p.index]; t.Type != TokenTypeEndOfFile; t = p.nextToken() {
 		if err := p.parseToken(t); err != nil {
 			return fmt.Errorf("[%s:%d:%d] %s", t.FileName, t.Line, t.Column, err)
 		}
@@ -206,10 +205,10 @@ func (p *Parser) parseTokens() error {
 func (p *Parser) getLabels() error {
 	for _, t := range p.tokens {
 		switch t.Type {
-		case lexer_rewrite.TokenTypeLabel:
+		case TokenTypeLabel:
 			p.labels[t.Value] = uint16(p.currentLableAddress)
 
-		case lexer_rewrite.TokenTypeInstruction:
+		case TokenTypeInstruction:
 			ins := instructions.InstructionByName[t.Value]
 			w := instructions.WidthNew[ins]
 			p.currentLableAddress += uint16(w)
@@ -219,7 +218,7 @@ func (p *Parser) getLabels() error {
 	return nil
 }
 
-func (p *Parser) Run(tokens []lexer_rewrite.Token) ([]byte, error) {
+func (p *Parser) Run(tokens []Token) ([]byte, error) {
 	p.tokens = tokens
 
 	err := p.getLabels()

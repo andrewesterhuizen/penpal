@@ -1,4 +1,4 @@
-package lexer_rewrite
+package assembler
 
 import (
 	"fmt"
@@ -9,12 +9,12 @@ func newToken(t TokenType, v string) Token {
 	return Token{Type: t, Value: v}
 }
 
-type testCase struct {
+type lexerTestCase struct {
 	input  string
 	output []Token
 }
 
-var testCases = []testCase{
+var lexerTestCases = []lexerTestCase{
 	{"// args: (status, data1, data2)\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"// db 5\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"; db 5\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
@@ -135,7 +135,7 @@ var testCases = []testCase{
 func TestLexer(t *testing.T) {
 	l := NewLexer()
 
-	for _, tc := range testCases {
+	for _, tc := range lexerTestCases {
 		tokens, err := l.Run("", tc.input)
 		if err != nil {
 			t.Error(err)
