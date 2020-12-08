@@ -85,7 +85,7 @@ var fileIncludeTestCases = []assemblerTestCase{
 	},
 }
 
-func newMockFileGetterFunc(files map[string]string) FileGetterFunc {
+func newMockFileGetterFunc(files map[string]string) fileGetterFunc {
 	return func(name string) (string, error) {
 		file, exists := files[name]
 		if !exists {
@@ -110,7 +110,7 @@ func TestInstructions(t *testing.T) {
 
 		cfg := Config{
 			disableEntryPointsTable: true,
-			FileGetterFunc:          newMockFileGetterFunc(files),
+			fileGetterFunc:          newMockFileGetterFunc(files),
 			SystemIncludes:          tc.systemIncludes,
 		}
 

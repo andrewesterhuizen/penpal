@@ -17,14 +17,14 @@ func getRegister(r string) (byte, error) {
 	}
 }
 
-func (p *Parser) parseNoOperandInstruction(instruction byte) error {
+func (p *parser) parseNoOperandInstruction(instruction byte) error {
 	p.addByte(instruction)
-	p.skipIf(TokenTypeNewLine)
+	p.skipIf(tokenTypeNewLine)
 	return nil
 }
 
-func (p *Parser) parseDB() error {
-	t, err := p.expect(TokenTypeInteger)
+func (p *parser) parseDB() error {
+	t, err := p.expect(tokenTypeInteger)
 	if err != nil {
 		return err
 	}
@@ -36,19 +36,19 @@ func (p *Parser) parseDB() error {
 
 	p.addByte(byte(n))
 
-	p.skipIf(TokenTypeNewLine)
+	p.skipIf(tokenTypeNewLine)
 	return nil
 }
 
-func (p *Parser) parseAddressInstruction(instruction byte) error {
+func (p *parser) parseAddressInstruction(instruction byte) error {
 	p.addByte(instruction)
 
 	t := p.nextToken()
 
 	var addr uint16
 
-	switch t.Type {
-	case TokenTypeInteger:
+	switch t.tokenType {
+	case tokenTypeInteger:
 		i, err := parseIntegerToken(t)
 		if err != nil {
 			return err
@@ -56,16 +56,16 @@ func (p *Parser) parseAddressInstruction(instruction byte) error {
 
 		addr = uint16(i)
 
-	case TokenTypeText:
-		i, exists := p.labels[t.Value]
+	case tokenTypeText:
+		i, exists := p.labels[t.value]
 		if !exists {
-			return fmt.Errorf("no definitions found for label %s", t.Value)
+			return fmt.Errorf("no definitions found for label %s", t.value)
 		}
 
 		addr = i
 
 	default:
-		return fmt.Errorf("unexpected token %s", t.Value)
+		return fmt.Errorf("unexpected token %s", t.value)
 	}
 
 	h := (addr & 0xff00) >> 8
@@ -74,23 +74,23 @@ func (p *Parser) parseAddressInstruction(instruction byte) error {
 	p.addByte(byte(h))
 	p.addByte(byte(l))
 
-	p.skipIf(TokenTypeNewLine)
+	p.skipIf(tokenTypeNewLine)
 	return nil
 }
 
-// func (p *Parser) parseArithmeticLogicInstruction(instruction byte) error {
+// func (p *parser) parseArithmeticLogicInstruction(instruction byte) error {
 // 	p.addByte(instruction)
 
 // 	t := p.nextToken()
 
-// 	switch t.Type {
+// 	switch t.tokenType {
 // 	// no operand = implied B register
-// 	case TokenTypeNewLine:
+// 	case tokenTypeNewLine:
 // 		p.addByte(instructions.Register)
 // 		p.addByte(instructions.RegisterB)
 
 // 		return nil
-// 	case TokenTypeInteger:
+// 	case tokenTypeInteger:
 // 		p.addByte(instructions.Immediate)
 
 // 		n, err := parseIntegerToken(t)
@@ -101,31 +101,31 @@ func (p *Parser) parseAddressInstruction(instruction byte) error {
 // 		p.addByte(byte(n))
 
 // 	default:
-// 		return fmt.Errorf("unexpected operand \"%s\"", t.Value)
+// 		return fmt.Errorf("unexpected operand \"%s\"", t.value)
 // 	}
 
-// 	_, err := p.expect(TokenTypeNewLine)
+// 	_, err := p.expect(tokenTypeNewLine)
 // 	return err
 // }
 
-func (p *Parser) parsePushInstruction() error {
+func (p *parser) parsePushInstruction() error {
 	p.addByte(instructions.Push)
 
 	t := p.nextToken()
 
-	switch t.Type {
+	switch t.tokenType {
 	// no operand = implied A register
-	case TokenTypeEndOfFile:
+	case tokenTypeEndOfFile:
 		p.addByte(instructions.Register)
 		p.addByte(instructions.RegisterA)
 
 		return nil
-	case TokenTypeNewLine:
+	case tokenTypeNewLine:
 		p.addByte(instructions.Register)
 		p.addByte(instructions.RegisterA)
 
 		return nil
-	case TokenTypeInteger:
+	case tokenTypeInteger:
 		p.addByte(instructions.Immediate)
 
 		n, err := parseIntegerToken(t)
@@ -137,32 +137,32 @@ func (p *Parser) parsePushInstruction() error {
 
 	default:
 		fmt.Println(t)
-		return fmt.Errorf("unexpected operand \"%s\"", t.Value)
+		return fmt.Errorf("unexpected operand \"%s\"", t.value)
 	}
 
-	p.skipIf(TokenTypeNewLine)
+	p.skipIf(tokenTypeNewLine)
 	return nil
 }
 
-func (p *Parser) parseIndex() (bool, byte, error) {
-	_, err := p.expect(TokenTypeLeftBracket)
+func (p *parser) parseIndex() (bool, byte, error) {
+	_, err := p.expect(tokenTypeLeftBracket)
 	if err != nil {
 		return false, 0, err
 	}
 
-	expectedTokenTypes := []TokenType{TokenTypeInteger, TokenTypeText}
-	t, err := p.expectRange(expectedTokenTypes)
+	expectedtokenTypes := []tokenType{tokenTypeInteger, tokenTypeText}
+	t, err := p.expectRange(expectedtokenTypes)
 	if err != nil {
 		return false, 0, err
 	}
 
-	_, err = p.expect(TokenTypeRightBracket)
+	_, err = p.expect(tokenTypeRightBracket)
 	if err != nil {
 		return false, 0, err
 	}
 
-	switch t.Type {
-	case TokenTypeInteger:
+	switch t.tokenType {
+	case tokenTypeInteger:
 		n, err := parseIntegerToken(t)
 		if err != nil {
 			return false, 0, err
@@ -170,8 +170,8 @@ func (p *Parser) parseIndex() (bool, byte, error) {
 
 		return false, byte(n), nil
 
-	case TokenTypeText:
-		r, err := getRegister(t.Value)
+	case tokenTypeText:
+		r, err := getRegister(t.value)
 		if err != nil {
 			return false, 0, err
 		}
@@ -179,18 +179,18 @@ func (p *Parser) parseIndex() (bool, byte, error) {
 		return true, r, nil
 
 	default:
-		return false, 0, fmt.Errorf("unxpected tokend %s", t.Value)
+		return false, 0, fmt.Errorf("unxpected tokend %s", t.value)
 	}
 }
 
 // this function needs some tests and cleaning up
-func (p *Parser) parseOffsetAddress() (byte, byte, uint16, error) {
-	_, err := p.expect(TokenTypeLeftParen)
+func (p *parser) parseOffsetAddress() (byte, byte, uint16, error) {
+	_, err := p.expect(tokenTypeLeftParen)
 	if err != nil {
 		return 0, 0, 0, err
 	}
 
-	t, err := p.expect(TokenTypeText)
+	t, err := p.expect(tokenTypeText)
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -201,12 +201,12 @@ func (p *Parser) parseOffsetAddress() (byte, byte, uint16, error) {
 	isLabel := false
 	var labelAddress uint16
 
-	if t.Value == "fp" {
+	if t.value == "fp" {
 		mode = instructions.FramePointerWithOffset
 	} else {
-		addr, exists := p.labels[t.Value]
+		addr, exists := p.labels[t.value]
 		if !exists {
-			return 0, 0, 0, fmt.Errorf("no definitions found for label %s", t.Value)
+			return 0, 0, 0, fmt.Errorf("no definitions found for label %s", t.value)
 		}
 
 		isLabel = true
@@ -216,20 +216,20 @@ func (p *Parser) parseOffsetAddress() (byte, byte, uint16, error) {
 	next := p.nextToken()
 
 	// get the offset
-	switch next.Type {
-	case TokenTypePlus:
+	switch next.tokenType {
+	case tokenTypePlus:
 		t := p.nextToken()
 
-		switch t.Type {
-		case TokenTypeInteger:
+		switch t.tokenType {
+		case tokenTypeInteger:
 			n, err := parseIntegerToken(t)
 			if err != nil {
 				return 0, 0, 0, err
 			}
 
 			modeArg = byte(n)
-		case TokenTypeText:
-			reg, err := getRegister(t.Value)
+		case tokenTypeText:
+			reg, err := getRegister(t.value)
 			if err != nil {
 				return 0, 0, 0, err
 			}
@@ -243,14 +243,14 @@ func (p *Parser) parseOffsetAddress() (byte, byte, uint16, error) {
 			modeArg = byte(reg)
 
 		default:
-			return 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", t.Value)
+			return 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", t.value)
 		}
 
-	case TokenTypeMinus:
+	case tokenTypeMinus:
 		t := p.nextToken()
 
-		switch t.Type {
-		case TokenTypeInteger:
+		switch t.tokenType {
+		case tokenTypeInteger:
 			n, err := parseIntegerToken(t)
 			if err != nil {
 				return 0, 0, 0, err
@@ -259,8 +259,8 @@ func (p *Parser) parseOffsetAddress() (byte, byte, uint16, error) {
 			nsigned := int8(n) * int8(-1)
 			modeArg = byte(nsigned)
 
-		case TokenTypeText:
-			reg, err := getRegister(t.Value)
+		case tokenTypeText:
+			reg, err := getRegister(t.value)
 			if err != nil {
 				return 0, 0, 0, err
 			}
@@ -274,11 +274,11 @@ func (p *Parser) parseOffsetAddress() (byte, byte, uint16, error) {
 			modeArg = byte(reg)
 
 		default:
-			return 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", t.Value)
+			return 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", t.value)
 		}
 
 	// handle offset from [n] or [reg]
-	case TokenTypeLeftBracket:
+	case tokenTypeLeftBracket:
 		p.backup()
 
 		isRegister, n, err := p.parseIndex()
@@ -292,19 +292,19 @@ func (p *Parser) parseOffsetAddress() (byte, byte, uint16, error) {
 
 		modeArg = n
 	default:
-		return 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", next.Value)
+		return 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", next.value)
 	}
 
-	p.expect(TokenTypeRightParen)
+	p.expect(tokenTypeRightParen)
 
 	return mode, modeArg, labelAddress, nil
 }
 
-func (p *Parser) parseMemoryAddress() (byte, byte, byte, byte, error) {
+func (p *parser) parseMemoryAddress() (byte, byte, byte, byte, error) {
 	t := p.nextToken()
 
-	switch t.Type {
-	case TokenTypeInteger:
+	switch t.tokenType {
+	case tokenTypeInteger:
 		n, err := parseIntegerToken(t)
 		if err != nil {
 			return 0, 0, 0, 0, err
@@ -315,7 +315,7 @@ func (p *Parser) parseMemoryAddress() (byte, byte, byte, byte, error) {
 
 		return instructions.Immediate, 0, h, l, nil
 
-	case TokenTypeLeftParen:
+	case tokenTypeLeftParen:
 		p.backup()
 		mode, offset, addr, err := p.parseOffsetAddress()
 
@@ -328,12 +328,12 @@ func (p *Parser) parseMemoryAddress() (byte, byte, byte, byte, error) {
 
 		return mode, offset, h, l, nil
 
-	case TokenTypeText:
-		if t.Value == "fp" {
+	case tokenTypeText:
+		if t.value == "fp" {
 			return instructions.FramePointerWithOffset, 0, 0, 0, nil
 		}
 
-		addr, err := p.getLabelAddress(t.Value)
+		addr, err := p.getLabelAddress(t.value)
 		if err != nil {
 			return 0, 0, 0, 0, err
 		}
@@ -344,32 +344,32 @@ func (p *Parser) parseMemoryAddress() (byte, byte, byte, byte, error) {
 		return instructions.Immediate, 0, h, l, nil
 
 	default:
-		return 0, 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", t.Value)
+		return 0, 0, 0, 0, fmt.Errorf("unexpected token \"%s\"", t.value)
 	}
 }
 
-func (p *Parser) parseMov() error {
+func (p *parser) parseMov() error {
 	p.addByte(instructions.Mov)
 
 	dest := p.nextToken()
 
-	if dest.Type != TokenTypeText {
-		return fmt.Errorf("unexpected token %s", dest.Type)
+	if dest.tokenType != tokenTypeText {
+		return fmt.Errorf("unexpected token %s", dest.tokenType)
 	}
 
-	reg, err := getRegister(dest.Value)
+	reg, err := getRegister(dest.value)
 	if err != nil {
 		return err
 	}
 
 	p.addByte(reg)
 
-	_, err = p.expect(TokenTypeComma)
+	_, err = p.expect(tokenTypeComma)
 	if err != nil {
 		return err
 	}
 
-	t, err := p.expect(TokenTypeInteger)
+	t, err := p.expect(tokenTypeInteger)
 	if err != nil {
 		return err
 	}
@@ -381,11 +381,11 @@ func (p *Parser) parseMov() error {
 
 	p.addByte(byte(n))
 
-	p.skipIf(TokenTypeNewLine)
+	p.skipIf(tokenTypeNewLine)
 	return nil
 }
 
-func (p *Parser) parseLoad() error {
+func (p *parser) parseLoad() error {
 	p.addByte(instructions.Load)
 
 	// address bytes
@@ -400,39 +400,39 @@ func (p *Parser) parseLoad() error {
 	p.addByte(modeArg)
 
 	// ,
-	_, err = p.expect(TokenTypeComma)
+	_, err = p.expect(tokenTypeComma)
 	if err != nil {
 		return err
 	}
 
 	// register
 	dest := p.nextToken()
-	if dest.Type != TokenTypeText {
-		return fmt.Errorf("expected register, got %s", dest.Type)
+	if dest.tokenType != tokenTypeText {
+		return fmt.Errorf("expected register, got %s", dest.tokenType)
 	}
 
-	reg, err := getRegister(dest.Value)
+	reg, err := getRegister(dest.value)
 	if err != nil {
 		return err
 	}
 
 	p.addByte(reg)
 
-	p.skipIf(TokenTypeNewLine)
+	p.skipIf(tokenTypeNewLine)
 	return nil
 }
 
-func (p *Parser) parseStore() error {
+func (p *parser) parseStore() error {
 	p.addByte(instructions.Store)
 
 	// register
 	dest := p.nextToken()
 
-	if dest.Type != TokenTypeText {
-		return fmt.Errorf("expected register, got %s", dest.Type)
+	if dest.tokenType != tokenTypeText {
+		return fmt.Errorf("expected register, got %s", dest.tokenType)
 	}
 
-	reg, err := getRegister(dest.Value)
+	reg, err := getRegister(dest.value)
 	if err != nil {
 		return err
 	}
@@ -440,7 +440,7 @@ func (p *Parser) parseStore() error {
 	p.addByte(reg)
 
 	// ,
-	_, err = p.expect(TokenTypeComma)
+	_, err = p.expect(tokenTypeComma)
 	if err != nil {
 		return err
 	}
@@ -456,6 +456,6 @@ func (p *Parser) parseStore() error {
 	p.addByte(h)
 	p.addByte(l)
 
-	p.skipIf(TokenTypeNewLine)
+	p.skipIf(tokenTypeNewLine)
 	return nil
 }

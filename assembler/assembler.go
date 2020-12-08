@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 )
 
-type FileGetterFunc func(path string) (string, error)
+type fileGetterFunc func(path string) (string, error)
 
 func fileSystemFileGetterFunc(path string) (string, error) {
 	f, err := ioutil.ReadFile(path)
@@ -19,23 +19,23 @@ func fileSystemFileGetterFunc(path string) (string, error) {
 
 type Config struct {
 	disableEntryPointsTable bool
-	FileGetterFunc          FileGetterFunc
+	fileGetterFunc          fileGetterFunc
 	SystemIncludes          map[string]string
 	InteruptLabels          [3]string
 }
 
 type Assembler struct {
 	config               Config
-	getFile              FileGetterFunc
+	getFile              fileGetterFunc
 	systemIncludeSources map[string]string
-	lexer                Lexer
+	lexer                lexer
 }
 
 func New(config Config) Assembler {
 	a := Assembler{config: config}
 
-	if config.FileGetterFunc != nil {
-		a.getFile = config.FileGetterFunc
+	if config.fileGetterFunc != nil {
+		a.getFile = config.fileGetterFunc
 	} else {
 		a.getFile = fileSystemFileGetterFunc
 	}
@@ -49,13 +49,13 @@ func New(config Config) Assembler {
 	return a
 }
 
-func (a *Assembler) getIncludeTokens(filename string, tokens []Token) ([]Token, error) {
-	out := []Token{}
+func (a *Assembler) getIncludeTokens(filename string, tokens []token) ([]token, error) {
+	out := []token{}
 
 	for _, t := range tokens {
-		switch t.Type {
-		case TokenTypeFileInclude:
-			name := t.Value
+		switch t.tokenType {
+		case tokenTypeFileInclude:
+			name := t.value
 
 			// get file
 			f, err := a.getFile(name)
@@ -76,8 +76,8 @@ func (a *Assembler) getIncludeTokens(filename string, tokens []Token) ([]Token, 
 			}
 
 			out = append(out, includeTokens...)
-		case TokenTypeSystemInclude:
-			name := t.Value
+		case tokenTypeSystemInclude:
+			name := t.value
 
 			// get system include source
 			source, exists := a.systemIncludeSources[name]
@@ -99,19 +99,19 @@ func (a *Assembler) getIncludeTokens(filename string, tokens []Token) ([]Token, 
 
 			out = append(out, includeTokens...)
 
-		case TokenTypeEndOfFile:
+		case tokenTypeEndOfFile:
 			// skip
 		default:
 			out = append(out, t)
 		}
 	}
 
-	tokens = append(tokens, Token{Type: TokenTypeEndOfFile})
+	tokens = append(tokens, token{tokenType: tokenTypeEndOfFile})
 
 	return out, nil
 }
 
-func (a *Assembler) getEntryPointTableTokens() ([]Token, error) {
+func (a *Assembler) getEntryPointTableTokens() ([]token, error) {
 	buf := bytes.Buffer{}
 	buf.WriteString("jump __start\n")
 
@@ -130,7 +130,7 @@ func (a *Assembler) getEntryPointTableTokens() ([]Token, error) {
 
 func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) {
 	// get tokens for entry point table
-	tokens := []Token{}
+	tokens := []token{}
 
 	if !a.config.disableEntryPointsTable {
 		entryPointTableTokens, err := a.getEntryPointTableTokens()
@@ -157,7 +157,7 @@ func (a *Assembler) GetProgram(filename string, source string) ([]uint8, error) 
 
 	tokens = append(tokens, combinedTokens...)
 
-	p := NewParser()
+	p := newParser()
 	bin, err := p.Run(tokens)
 	if err != nil {
 		return nil, err

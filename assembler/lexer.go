@@ -9,128 +9,128 @@ import (
 )
 
 const (
-	TokenTypeEndOfFile TokenType = iota
-	TokenTypeNewLine
-	TokenTypeText
-	TokenTypeInstruction
-	TokenTypeFileInclude
-	TokenTypeSystemInclude
-	TokenTypeInteger
-	TokenTypePlus
-	TokenTypeMinus
-	TokenTypeLeftParen
-	TokenTypeRightParen
-	TokenTypeLeftBracket
-	TokenTypeRightBracket
-	TokenTypeComma
-	TokenTypeColon
-	TokenTypeDoubleQuote
-	TokenTypeDot
-	TokenTypeAngleBracketLeft
-	TokenTypeAngleBracketRight
-	TokenTypeLabel
+	tokenTypeEndOfFile tokenType = iota
+	tokenTypeNewLine
+	tokenTypeText
+	tokenTypeInstruction
+	tokenTypeFileInclude
+	tokenTypeSystemInclude
+	tokenTypeInteger
+	tokenTypePlus
+	tokenTypeMinus
+	tokenTypeLeftParen
+	tokenTypeRightParen
+	tokenTypeLeftBracket
+	tokenTypeRightBracket
+	tokenTypeComma
+	tokenTypeColon
+	tokenTypeDoubleQuote
+	tokenTypeDot
+	tokenTypeAngleBracketLeft
+	tokenTypeAngleBracketRight
+	tokenTypeLabel
 )
 
 const eof = -1
 
-type TokenType int
+type tokenType int
 
-func (t TokenType) String() string {
+func (t tokenType) String() string {
 	switch t {
-	case TokenTypeEndOfFile:
+	case tokenTypeEndOfFile:
 		return "EndOfFile"
-	case TokenTypeNewLine:
+	case tokenTypeNewLine:
 		return "NewLine"
-	case TokenTypeText:
+	case tokenTypeText:
 		return "Text"
-	case TokenTypeInstruction:
+	case tokenTypeInstruction:
 		return "Instruction"
-	case TokenTypeInteger:
+	case tokenTypeInteger:
 		return "Integer"
-	case TokenTypePlus:
+	case tokenTypePlus:
 		return "Plus"
-	case TokenTypeMinus:
+	case tokenTypeMinus:
 		return "Minus"
-	case TokenTypeLeftParen:
+	case tokenTypeLeftParen:
 		return "LeftParen"
-	case TokenTypeRightParen:
+	case tokenTypeRightParen:
 		return "RightParen"
-	case TokenTypeLeftBracket:
+	case tokenTypeLeftBracket:
 		return "LeftBracket"
-	case TokenTypeRightBracket:
+	case tokenTypeRightBracket:
 		return "RightBracket"
-	case TokenTypeComma:
+	case tokenTypeComma:
 		return "Comma"
-	case TokenTypeColon:
+	case tokenTypeColon:
 		return "Colon"
-	case TokenTypeDoubleQuote:
+	case tokenTypeDoubleQuote:
 		return "DoubleQuote"
-	case TokenTypeDot:
+	case tokenTypeDot:
 		return "Dot"
-	case TokenTypeAngleBracketLeft:
+	case tokenTypeAngleBracketLeft:
 		return "AngleBracketLeft"
-	case TokenTypeAngleBracketRight:
+	case tokenTypeAngleBracketRight:
 		return "AngleBracketRight"
-	case TokenTypeLabel:
+	case tokenTypeLabel:
 		return "Label"
-	case TokenTypeFileInclude:
+	case tokenTypeFileInclude:
 		return "FileInclude"
-	case TokenTypeSystemInclude:
+	case tokenTypeSystemInclude:
 		return "SystemInclude"
 	default:
 		return "Unknown"
 	}
 }
 
-type Token struct {
-	Type     TokenType
-	Value    string
-	FileName string
-	Line     int
-	Column   int
+type token struct {
+	tokenType tokenType
+	value     string
+	fileName  string
+	line      int
+	column    int
 }
 
-func (t Token) String() string {
-	if t.Value == "\n" {
-		t.Value = "(newline)"
-	} else if t.Value == "" {
-		t.Value = "(empty)"
-	} else if strings.TrimSpace(t.Value) == "" {
-		t.Value = "(whitespace)"
+func (t token) String() string {
+	if t.value == "\n" {
+		t.value = "(newline)"
+	} else if t.value == "" {
+		t.value = "(empty)"
+	} else if strings.TrimSpace(t.value) == "" {
+		t.value = "(whitespace)"
 	}
 
-	return fmt.Sprintf("{ Type: %v, Value: \"%s\", Line: %v, Column: %v }\n", t.Type, t.Value, t.Line, t.Column)
+	return fmt.Sprintf("{ tokenType: %v, value: \"%s\", line: %v, column: %v }\n", t.tokenType, t.value, t.line, t.column)
 }
 
-type Lexer struct {
+type lexer struct {
 	input       string
 	start       int
 	pos         int
 	startOfLine int
 	line        int
 	filename    string
-	tokens      []Token
+	tokens      []token
 }
 
-func NewLexer() *Lexer {
-	return &Lexer{}
+func newLexer() *lexer {
+	return &lexer{}
 }
 
-func (l *Lexer) reset(filename string, input string) {
+func (l *lexer) reset(filename string, input string) {
 	l.filename = filename
 	l.input = input
 	l.start = 0
 	l.pos = 0
 	l.line = 1
 	l.startOfLine = 0
-	l.tokens = []Token{}
+	l.tokens = []token{}
 }
 
-func (l *Lexer) errWithPos(err error) error {
+func (l *lexer) errWithPos(err error) error {
 	return fmt.Errorf("[%d:%d] %s", l.line, l.getColumn(), err)
 }
 
-func (l *Lexer) Run(filename string, input string) ([]Token, error) {
+func (l *lexer) Run(filename string, input string) ([]token, error) {
 	l.reset(filename, input)
 
 	for {
@@ -163,43 +163,43 @@ func (l *Lexer) Run(filename string, input string) ([]Token, error) {
 
 		case r == '\n':
 			l.pos++
-			l.addToken(TokenTypeNewLine)
+			l.addToken(tokenTypeNewLine)
 			l.line++
 
 			l.startOfLine = l.pos
 		case r == ',':
 			l.pos++
-			l.addToken(TokenTypeComma)
+			l.addToken(tokenTypeComma)
 		case r == '[':
 			l.pos++
-			l.addToken(TokenTypeLeftBracket)
+			l.addToken(tokenTypeLeftBracket)
 		case r == ']':
 			l.pos++
-			l.addToken(TokenTypeRightBracket)
+			l.addToken(tokenTypeRightBracket)
 		case r == '(':
 			l.pos++
-			l.addToken(TokenTypeLeftParen)
+			l.addToken(tokenTypeLeftParen)
 		case r == ')':
 			l.pos++
-			l.addToken(TokenTypeRightParen)
+			l.addToken(tokenTypeRightParen)
 		case r == '+':
 			l.pos++
-			l.addToken(TokenTypePlus)
+			l.addToken(tokenTypePlus)
 		case r == '-':
 			l.pos++
-			l.addToken(TokenTypeMinus)
+			l.addToken(tokenTypeMinus)
 		case r == '"':
 			l.pos++
-			l.addToken(TokenTypeDoubleQuote)
+			l.addToken(tokenTypeDoubleQuote)
 		case r == '.':
 			l.pos++
-			l.addToken(TokenTypeDot)
+			l.addToken(tokenTypeDot)
 		case r == '<':
 			l.pos++
-			l.addToken(TokenTypeAngleBracketLeft)
+			l.addToken(tokenTypeAngleBracketLeft)
 		case r == '>':
 			l.pos++
-			l.addToken(TokenTypeAngleBracketRight)
+			l.addToken(tokenTypeAngleBracketRight)
 		case r == ' ':
 			// skip
 			l.pos++
@@ -211,7 +211,7 @@ func (l *Lexer) Run(filename string, input string) ([]Token, error) {
 		}
 
 		if l.pos >= len(l.input) {
-			l.addToken(TokenTypeEndOfFile)
+			l.addToken(tokenTypeEndOfFile)
 			break
 		}
 	}
@@ -219,7 +219,7 @@ func (l *Lexer) Run(filename string, input string) ([]Token, error) {
 	return l.tokens, nil
 }
 
-func (l *Lexer) next() rune {
+func (l *lexer) next() rune {
 	l.pos++
 
 	if l.pos >= len(l.input) {
@@ -229,7 +229,7 @@ func (l *Lexer) next() rune {
 	return rune(l.input[l.pos])
 }
 
-func (l *Lexer) peek() rune {
+func (l *lexer) peek() rune {
 	nextPos := l.pos + 1
 
 	if nextPos >= len(l.input) {
@@ -239,35 +239,35 @@ func (l *Lexer) peek() rune {
 	return rune(l.input[nextPos])
 }
 
-func (l *Lexer) skipUntil(r rune) {
+func (l *lexer) skipUntil(r rune) {
 	n := l.next()
 	for n != r && n != eof {
 		n = l.next()
 	}
 }
 
-func (l *Lexer) getText() string {
+func (l *lexer) getText() string {
 	return l.input[l.start:l.pos]
 }
 
-func (l *Lexer) getColumn() int {
+func (l *lexer) getColumn() int {
 	v := l.input[l.start:l.pos]
 	return l.pos - l.startOfLine - len(v)
 }
 
-func (l *Lexer) addToken(tokenType TokenType) {
-	t := Token{
-		Type:     tokenType,
-		Value:    l.input[l.start:l.pos],
-		FileName: l.filename,
-		Line:     l.line,
-		Column:   l.getColumn(),
+func (l *lexer) addToken(tt tokenType) {
+	t := token{
+		tokenType: tt,
+		value:     l.input[l.start:l.pos],
+		fileName:  l.filename,
+		line:      l.line,
+		column:    l.getColumn(),
 	}
 	l.tokens = append(l.tokens, t)
 	l.start = l.pos
 }
 
-func (l *Lexer) lexText() {
+func (l *lexer) lexText() {
 	r := rune(l.input[l.pos])
 
 	for isAlphaNumeric(r) {
@@ -275,7 +275,7 @@ func (l *Lexer) lexText() {
 	}
 
 	if r == ':' {
-		l.addToken(TokenTypeLabel)
+		l.addToken(tokenTypeLabel)
 		l.pos++
 		return
 	}
@@ -284,15 +284,15 @@ func (l *Lexer) lexText() {
 
 	_, isInstruction := instructions.InstructionByName[text]
 	if isInstruction {
-		l.addToken(TokenTypeInstruction)
+		l.addToken(tokenTypeInstruction)
 		return
 	}
 
-	l.addToken(TokenTypeText)
+	l.addToken(tokenTypeText)
 	return
 }
 
-func (l *Lexer) lexInclude() error {
+func (l *lexer) lexInclude() error {
 	r := rune(l.input[l.pos])
 
 	// skip "include" text
@@ -302,13 +302,13 @@ func (l *Lexer) lexInclude() error {
 
 	r = l.next()
 
-	tt := TokenTypeFileInclude
+	tt := tokenTypeFileInclude
 
 	switch r {
 	case '"':
-		tt = TokenTypeFileInclude
+		tt = tokenTypeFileInclude
 	case '<':
-		tt = TokenTypeSystemInclude
+		tt = tokenTypeSystemInclude
 	default:
 		fmt.Println(l.input)
 		return fmt.Errorf("expected '<' or '\"', got %s", string(r))
@@ -341,7 +341,7 @@ func (l *Lexer) lexInclude() error {
 	return nil
 }
 
-func (l *Lexer) lexInteger() {
+func (l *lexer) lexInteger() {
 	r := rune(l.input[l.pos])
 
 	// first rune needs to be digit
@@ -368,7 +368,7 @@ func (l *Lexer) lexInteger() {
 
 	}
 
-	l.addToken(TokenTypeInteger)
+	l.addToken(tokenTypeInteger)
 	return
 }
 

@@ -5,135 +5,135 @@ import (
 	"testing"
 )
 
-func newToken(t TokenType, v string) Token {
-	return Token{Type: t, Value: v}
+func newToken(t tokenType, v string) token {
+	return token{tokenType: t, value: v}
 }
 
 type lexerTestCase struct {
 	input  string
-	output []Token
+	output []token
 }
 
 var lexerTestCases = []lexerTestCase{
-	{"// args: (status, data1, data2)\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"// db 5\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"; db 5\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"db 5\n", []Token{newToken(TokenTypeInstruction, "db"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 5\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 0xbb\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "0xbb"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 0x5f\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "0x5f"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"add 0b101\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "0b101"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"mov 23\n", []Token{newToken(TokenTypeInstruction, "mov"), newToken(TokenTypeInteger, "23"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
-	{"mov label\n", []Token{newToken(TokenTypeInstruction, "mov"), newToken(TokenTypeText, "label"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"// args: (status, data1, data2)\n", []token{newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"// db 5\n", []token{newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"; db 5\n", []token{newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"db 5\n", []token{newToken(tokenTypeInstruction, "db"), newToken(tokenTypeInteger, "5"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"add\n", []token{newToken(tokenTypeInstruction, "add"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"add 5\n", []token{newToken(tokenTypeInstruction, "add"), newToken(tokenTypeInteger, "5"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"add 0xbb\n", []token{newToken(tokenTypeInstruction, "add"), newToken(tokenTypeInteger, "0xbb"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"add 0x5f\n", []token{newToken(tokenTypeInstruction, "add"), newToken(tokenTypeInteger, "0x5f"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"add 0b101\n", []token{newToken(tokenTypeInstruction, "add"), newToken(tokenTypeInteger, "0b101"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"mov 23\n", []token{newToken(tokenTypeInstruction, "mov"), newToken(tokenTypeInteger, "23"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
+	{"mov label\n", []token{newToken(tokenTypeInstruction, "mov"), newToken(tokenTypeText, "label"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
 	{
 		"mov 11, A\n",
-		[]Token{
-			newToken(TokenTypeInstruction, "mov"),
-			newToken(TokenTypeInteger, "11"),
-			newToken(TokenTypeComma, ","),
-			newToken(TokenTypeText, "A"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeInstruction, "mov"),
+			newToken(tokenTypeInteger, "11"),
+			newToken(tokenTypeComma, ","),
+			newToken(tokenTypeText, "A"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
-	{"label:\n", []Token{newToken(TokenTypeLabel, "label"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"label:\n", []token{newToken(tokenTypeLabel, "label"), newToken(tokenTypeNewLine, "\n"), newToken(tokenTypeEndOfFile, "")}},
 	{
 		"mov (fp)\n",
-		[]Token{
-			newToken(TokenTypeInstruction, "mov"),
-			newToken(TokenTypeLeftParen, "("),
-			newToken(TokenTypeText, "fp"),
-			newToken(TokenTypeRightParen, ")"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeInstruction, "mov"),
+			newToken(tokenTypeLeftParen, "("),
+			newToken(tokenTypeText, "fp"),
+			newToken(tokenTypeRightParen, ")"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 	{
 		"mov (label[3])\n",
-		[]Token{
-			newToken(TokenTypeInstruction, "mov"),
-			newToken(TokenTypeLeftParen, "("),
-			newToken(TokenTypeText, "label"),
-			newToken(TokenTypeLeftBracket, "["),
-			newToken(TokenTypeInteger, "3"),
-			newToken(TokenTypeRightBracket, "]"),
-			newToken(TokenTypeRightParen, ")"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeInstruction, "mov"),
+			newToken(tokenTypeLeftParen, "("),
+			newToken(tokenTypeText, "label"),
+			newToken(tokenTypeLeftBracket, "["),
+			newToken(tokenTypeInteger, "3"),
+			newToken(tokenTypeRightBracket, "]"),
+			newToken(tokenTypeRightParen, ")"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 	{
 		"mov (fp+1)\n",
-		[]Token{
-			newToken(TokenTypeInstruction, "mov"),
-			newToken(TokenTypeLeftParen, "("),
-			newToken(TokenTypeText, "fp"),
-			newToken(TokenTypePlus, "+"),
-			newToken(TokenTypeInteger, "1"),
-			newToken(TokenTypeRightParen, ")"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeInstruction, "mov"),
+			newToken(tokenTypeLeftParen, "("),
+			newToken(tokenTypeText, "fp"),
+			newToken(tokenTypePlus, "+"),
+			newToken(tokenTypeInteger, "1"),
+			newToken(tokenTypeRightParen, ")"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 	{
 		"mov (fp+1), B\n",
-		[]Token{
-			newToken(TokenTypeInstruction, "mov"),
-			newToken(TokenTypeLeftParen, "("),
-			newToken(TokenTypeText, "fp"),
-			newToken(TokenTypePlus, "+"),
-			newToken(TokenTypeInteger, "1"),
-			newToken(TokenTypeRightParen, ")"),
-			newToken(TokenTypeComma, ","),
-			newToken(TokenTypeText, "B"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeInstruction, "mov"),
+			newToken(tokenTypeLeftParen, "("),
+			newToken(tokenTypeText, "fp"),
+			newToken(tokenTypePlus, "+"),
+			newToken(tokenTypeInteger, "1"),
+			newToken(tokenTypeRightParen, ")"),
+			newToken(tokenTypeComma, ","),
+			newToken(tokenTypeText, "B"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 	{
 		"mov A, 67\nadd 13\n",
-		[]Token{
-			newToken(TokenTypeInstruction, "mov"),
-			newToken(TokenTypeText, "A"),
-			newToken(TokenTypeComma, ","),
-			newToken(TokenTypeInteger, "67"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeInstruction, "add"),
-			newToken(TokenTypeInteger, "13"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeInstruction, "mov"),
+			newToken(tokenTypeText, "A"),
+			newToken(tokenTypeComma, ","),
+			newToken(tokenTypeInteger, "67"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeInstruction, "add"),
+			newToken(tokenTypeInteger, "13"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 	{
 		"#include \"test.asm\"\n",
-		[]Token{
-			newToken(TokenTypeFileInclude, "test.asm"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeFileInclude, "test.asm"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 	{
 		"#include <test>\n",
-		[]Token{
-			newToken(TokenTypeSystemInclude, "test"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeSystemInclude, "test"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 	{
 		"push 0xae\n",
-		[]Token{
-			newToken(TokenTypeInstruction, "push"),
-			newToken(TokenTypeInteger, "0xae"),
-			newToken(TokenTypeNewLine, "\n"),
-			newToken(TokenTypeEndOfFile, ""),
+		[]token{
+			newToken(tokenTypeInstruction, "push"),
+			newToken(tokenTypeInteger, "0xae"),
+			newToken(tokenTypeNewLine, "\n"),
+			newToken(tokenTypeEndOfFile, ""),
 		},
 	},
 }
 
 func TestLexer(t *testing.T) {
-	l := NewLexer()
+	l := newLexer()
 
 	for _, tc := range lexerTestCases {
 		tokens, err := l.Run("", tc.input)
@@ -151,12 +151,12 @@ func TestLexer(t *testing.T) {
 		}
 
 		for i, token := range tc.output {
-			if token.Type != tokens[i].Type {
-				t.Errorf("expected type %v and got %v", token.Type, tokens[i].Type)
+			if token.tokenType != tokens[i].tokenType {
+				t.Errorf("expected type %v and got %v", token.tokenType, tokens[i].tokenType)
 			}
 
-			if token.Value != tokens[i].Value {
-				t.Errorf("expected value %s and got %s for token type %v", token.Value, tokens[i].Value, token.Type)
+			if token.value != tokens[i].value {
+				t.Errorf("expected value %s and got %s for token type %v", token.value, tokens[i].value, token.tokenType)
 			}
 		}
 	}

@@ -327,14 +327,14 @@ func TestParser(t *testing.T) {
 	parserTestCases = append(parserTestCases, pushTestCases...)
 
 	for _, tc := range parserTestCases {
-		l := NewLexer()
+		l := newLexer()
 		tokens, err := l.Run("", tc.input)
 		if err != nil {
 			t.Errorf("%s\nwith input:\n %v", err, tc.input)
 			return
 		}
 
-		p := NewParser()
+		p := newParser()
 
 		out, err := p.Run(tokens)
 		if err != nil {
