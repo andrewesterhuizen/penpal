@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/andrewesterhuizen/penpal/assembler2"
+	"github.com/andrewesterhuizen/penpal/assembler"
 	"github.com/andrewesterhuizen/penpal/instructions"
 	"github.com/andrewesterhuizen/penpal/penpal"
 
@@ -71,7 +71,7 @@ func compileFromFile(filename string) {
 		log.Fatal(err)
 	}
 
-	a := assembler2.New(assembler2.Config{SystemIncludes: systemIncludes})
+	a := assembler.New(assembler.Config{SystemIncludes: systemIncludes})
 
 	program, err := a.GetProgram(filename, string(f))
 	if err != nil {
@@ -110,7 +110,7 @@ func loadProgramFromFile(filename string) []byte {
 		log.Fatal(err)
 	}
 
-	a := assembler2.New(assembler2.Config{
+	a := assembler.New(assembler.Config{
 		SystemIncludes: systemIncludes,
 		InteruptLabels: [3]string{"on_tick"},
 	})

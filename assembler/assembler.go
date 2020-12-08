@@ -1,4 +1,4 @@
-package assembler2
+package assembler
 
 import (
 	"bytes"
