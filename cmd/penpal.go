@@ -29,7 +29,7 @@ func printDisasm(program []byte) {
 			n, exists := instructions.Names[b]
 			if exists {
 				fmt.Printf("%02d: (%s)\n", i, n)
-				w = instructions.WidthNew[b]
+				w = instructions.Width[b]
 			} else {
 				fmt.Printf("%02d: %03d\n", i, b)
 			}

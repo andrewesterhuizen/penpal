@@ -210,7 +210,7 @@ func (p *parser) getLabels() error {
 
 		case tokenTypeInstruction:
 			ins := instructions.InstructionByName[t.value]
-			w := instructions.WidthNew[ins]
+			w := instructions.Width[ins]
 			p.currentLableAddress += uint16(w)
 		}
 	}

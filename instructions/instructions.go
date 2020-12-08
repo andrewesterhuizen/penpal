@@ -31,7 +31,6 @@ const (
 	Rand
 	Db
 
-	Value                     = 0x0 // TODO: remove this one when it is no longer used
 	Immediate                 = 0x0
 	ImmediatePlusRegister     = 0x1
 	ImmediateMinusRegister    = 0x2
@@ -112,11 +111,11 @@ var InstructionByName = map[string]uint8{
 }
 
 var Width = map[uint8]int{
-	Mov:    4,
+	Mov:    3,
 	Swap:   1,
 	Halt:   1,
-	Load:   5,
-	Store:  5,
+	Load:   6,
+	Store:  6,
 	Add:    1,
 	Sub:    1,
 	Mul:    1,
@@ -131,38 +130,6 @@ var Width = map[uint8]int{
 	LTE:    1,
 	Eq:     1,
 	Neq:    1,
-	Jump:   3,
-	Jumpz:  3,
-	Jumpnz: 3,
-	Push:   3,
-	Pop:    1,
-	Call:   3,
-	Ret:    1,
-	Reti:   1,
-	Rand:   1,
-	Db:     1,
-}
-
-var WidthNew = map[uint8]int{
-	Mov:    3,
-	Swap:   1,
-	Halt:   1,
-	Load:   6,
-	Store:  6,
-	Add:    3,
-	Sub:    3,
-	Mul:    3,
-	Div:    3,
-	Shl:    3,
-	Shr:    3,
-	And:    3,
-	Or:     3,
-	GT:     3,
-	GTE:    3,
-	LT:     3,
-	LTE:    3,
-	Eq:     3,
-	Neq:    3,
 	Jump:   3,
 	Jumpz:  3,
 	Jumpnz: 3,
