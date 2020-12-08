@@ -1,9 +1,14 @@
-here:
-    db 0xaa
-    db 0xcc
+#include <midi>
 
 __start:
-    mov A, 2
-    load (here[A]), B
-    halt  
+loop:
+    jump loop
 
+on_tick: 
+    rand
+    mov B, 0x3C
+    and
+    push
+    push 0x1
+    call midi_trig
+    reti

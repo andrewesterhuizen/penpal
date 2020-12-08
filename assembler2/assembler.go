@@ -8,8 +8,6 @@ import (
 	"github.com/andrewesterhuizen/penpal/lexer_rewrite"
 )
 
-const EntryPointsTableSize = 12
-
 type FileGetterFunc func(path string) (string, error)
 
 func fileSystemFileGetterFunc(path string) (string, error) {

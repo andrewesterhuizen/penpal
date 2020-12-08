@@ -5,57 +5,50 @@ import (
 	"text/template"
 )
 
-// TODO: these are just random addresses, these should be changed to labels to dbs in the include
-const (
-	AddressBPM              = 0xaa00
-	AddressPPQN             = 0xaa01
-	AddressMidiMessageStart = 0xaa02
-	AddressStatus           = 0xaa02
-	AddressData1            = 0xaa03
-	AddressData2            = 0xaa04
-	AddressSendMessage      = 0xaa05
-)
-
 var midiNoteIncludeTemplateText = `
 {{ range $key, $value := . }}
-#define MIDI_NOTE_{{ $key }} {{ $value | printf "0x%02x" -}}
+midi_note_{{ $key }}: db {{ $value -}}
 {{ end }}
 `
 var midiNoteIncludeTemplateData = map[string]int{
-	"C1":  24,
-	"C#1": 25,
-	"D1":  26,
-	"D#1": 27,
-	"E":   28,
-	"F":   29,
-	"F#":  30,
-	"G":   31,
-	"G#":  32,
-	"A1":  33,
-	"A#1": 34,
-	"B1":  35,
+	"C1":   24,
+	"Csh1": 25,
+	"D1":   26,
+	"Dsh1": 27,
+	"E":    28,
+	"F":    29,
+	"Fsh":  30,
+	"G":    31,
+	"Gsh":  32,
+	"A1":   33,
+	"Ash1": 34,
+	"B1":   35,
 }
 
 var midiIncludeTemplateText = `
-#define MIDI_ADDRESS_BPM {{.AddressBPM | printf "0x%04x"}} 
-#define MIDI_ADDRESS_PPQN {{.AddressPPQN | printf "0x%04x"}} 
-#define MIDI_ADDRESS_STATUS {{.AddressStatus | printf "0x%04x"}} 
-#define MIDI_ADDRESS_DATA1 {{.AddressData1 | printf "0x%04x"}} 
-#define MIDI_ADDRESS_DATA2 {{.AddressData2 | printf "0x%04x"}} 
-#define MIDI_ADDRESS_SEND_MESSAGE {{.AddressSendMessage | printf "0x%04x"}} 
+midi_clock_enable: db 1
+midi_bpm: db 120
+midi_ppqn: db 2
+midi_status: db 0
+midi_data1: db 0
+midi_data2: db 0
+midi_send_bit: db 0
 
 // args: (status, data1, data2)
 midi_send_message:
 	// status
-	store +7(fp) MIDI_ADDRESS_STATUS
+	load (fp+7), A
+	store A, midi_status
 	// data1
-	store +8(fp) MIDI_ADDRESS_DATA1
+	load (fp+8), A
+	store A, midi_data1
 	// data2
-	store +9(fp) MIDI_ADDRESS_DATA2
+	load (fp+9), A
+	store A, midi_data2
 
 	// set send byte
-	mov A 0x1
-	store A MIDI_ADDRESS_SEND_MESSAGE
+	mov A, 1
+	store A, midi_send_bit
 
 	ret
 
@@ -64,9 +57,10 @@ midi_trig:
 	// send note on
 
 	// data2 (velocity)
-	push 0x7F
+	push 0x7f
 	// data1 (note)
-	push +7(fp)
+	load (fp+7), A
+	push
 	// status (0x90/note on)
 	push 0x90
 	// number of args
@@ -77,9 +71,10 @@ midi_trig:
 	// send note off
 
 	// data2 (velocity)
-	push 0x63
+	push 0x7f
 	// data1 (note)
-    push +7(fp)
+	load (fp+7), A
+	push
 	// status (0x80/note off)
 	push 0x80
 	// number of args
@@ -88,15 +83,6 @@ midi_trig:
 
     ret
 `
-
-var midiIncludeIncludeData = map[string]int{
-	"AddressBPM":         AddressBPM,
-	"AddressPPQN":        AddressPPQN,
-	"AddressStatus":      AddressStatus,
-	"AddressData1":       AddressData1,
-	"AddressData2":       AddressData2,
-	"AddressSendMessage": AddressSendMessage,
-}
 
 func getIncludeTemplate(name string, templateText string, data interface{}) (string, error) {
 	buf := bytes.Buffer{}
@@ -117,7 +103,7 @@ func getIncludeTemplate(name string, templateText string, data interface{}) (str
 func GetSystemIncludes() (map[string]string, error) {
 	var includes = map[string]string{}
 
-	midiInlude, err := getIncludeTemplate("<midi>", midiIncludeTemplateText, midiIncludeIncludeData)
+	midiInlude, err := getIncludeTemplate("<midi>", midiIncludeTemplateText, map[string]int{})
 	if err != nil {
 		return nil, err
 	}

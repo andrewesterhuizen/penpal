@@ -143,6 +143,16 @@ func (l *Lexer) Run(filename string, input string) ([]Token, error) {
 		case isAlphaNumeric(r):
 			l.lexText()
 
+		case r == ';':
+			l.skipUntil('\n')
+
+		case r == '/':
+			if l.next() != '/' {
+				return nil, fmt.Errorf("unexpected character /")
+			}
+
+			l.skipUntil('\n')
+
 		case r == '#':
 			l.next() // skip #
 
@@ -227,6 +237,13 @@ func (l *Lexer) peek() rune {
 	}
 
 	return rune(l.input[nextPos])
+}
+
+func (l *Lexer) skipUntil(r rune) {
+	n := l.next()
+	for n != r && n != eof {
+		n = l.next()
+	}
 }
 
 func (l *Lexer) getText() string {
@@ -360,5 +377,5 @@ func isAlphaNumeric(r rune) bool {
 }
 
 func isHex(r rune) bool {
-	return unicode.IsDigit(r) || strings.IndexRune("abcdef", r) >= 0
+	return unicode.IsDigit(r) || strings.IndexRune("abcdefABCDEF", r) >= 0
 }

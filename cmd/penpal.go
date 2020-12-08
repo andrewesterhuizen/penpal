@@ -9,11 +9,41 @@ import (
 	"time"
 
 	"github.com/andrewesterhuizen/penpal/assembler2"
+	"github.com/andrewesterhuizen/penpal/instructions"
 	"github.com/andrewesterhuizen/penpal/penpal"
 
 	"github.com/andrewesterhuizen/penpal/midi"
 	"github.com/andrewesterhuizen/penpal/vm"
 )
+
+func printDisasm(program []byte) {
+	w := 0
+
+	for i, b := range program {
+		if i < 19 {
+			fmt.Printf("%02d: %03d\n", i, b)
+			continue
+		}
+
+		if w == 0 {
+			n, exists := instructions.Names[b]
+			if exists {
+				fmt.Printf("%02d: (%s)\n", i, n)
+				w = instructions.WidthNew[b]
+			} else {
+				fmt.Printf("%02d: %03d\n", i, b)
+			}
+		} else {
+			fmt.Printf("%02d: %03d\n", i, b)
+		}
+
+		if w > 0 {
+			w--
+		}
+	}
+
+	fmt.Println()
+}
 
 func printMidiDevices() {
 	midiHandler := midi.NewPortMidiMidiHandler()
@@ -82,7 +112,7 @@ func loadProgramFromFile(filename string) []byte {
 
 	a := assembler2.New(assembler2.Config{
 		SystemIncludes: systemIncludes,
-		// InteruptLabels: [3]string{"on_tick"},
+		InteruptLabels: [3]string{"on_tick"},
 	})
 
 	program, err := a.GetProgram(filename, string(f))
@@ -96,33 +126,33 @@ func loadProgramFromFile(filename string) []byte {
 func executeProgramFromFile(filename string) {
 	program := loadProgramFromFile(filename)
 
-	// midiHandler := midi.NewPortMidiMidiHandler()
-	// defer midiHandler.Close()
+	midiHandler := midi.NewPortMidiMidiHandler()
+	defer midiHandler.Close()
 
 	vm := vm.New()
 
-	// msPerMinute := 60 * 1000
+	msPerMinute := 60 * 1000
 
-	// // TODO: clock should be enabled according to a flag
-	// go func() {
-	// 	for {
-	// 		bpm := vm.GetMemory(penpal.AddressBPM)
-	// 		ppqn := vm.GetMemory(penpal.AddressPPQN)
+	// TODO: clock should be enabled according to a flag
+	go func() {
+		for {
+			bpm := vm.GetMemory(0xd)
+			ppqn := vm.GetMemory(0xe)
 
-	// 		if bpm == 0 || ppqn == 0 {
-	// 			continue
-	// 		}
+			if bpm == 0 || ppqn == 0 {
+				continue
+			}
 
-	// 		interval := (msPerMinute / int(bpm)) / int(ppqn)
-	// 		vm.Interupt(0)
-	// 		time.Sleep(time.Duration(interval) * time.Millisecond)
+			interval := (msPerMinute / int(bpm)) / int(ppqn)
+			vm.Interupt(0)
+			time.Sleep(time.Duration(interval) * time.Millisecond)
 
-	// 	}
-	// }()
+		}
+	}()
 
 	vm.Load(program)
 
-	clockSpeedMHz := 4
+	clockSpeedMHz := 1
 	clockInterval := (1000 / time.Duration(clockSpeedMHz)) * time.Nanosecond
 
 	ticker := time.NewTicker(clockInterval)
@@ -137,13 +167,13 @@ func executeProgramFromFile(filename string) {
 			case <-ticker.C:
 				if vm.Halted {
 					vm.PrintReg()
-					vm.PrintMem(0, 16)
+					vm.PrintMem(0, 24)
 					done <- true
 					return
 				}
 
 				vm.Tick()
-				m := vm.GetMemorySection(penpal.AddressMidiMessageStart, 4)
+				m := vm.GetMemorySection(0x000f, 4)
 
 				if m[3] > 0 {
 					messages <- midi.MidiMessage{m[0], m[1], m[2]}
@@ -152,12 +182,12 @@ func executeProgramFromFile(filename string) {
 		}
 	}()
 
-	// go func() {
-	// 	for m := range messages {
-	// 		midiHandler.Send(m[0], m[1], m[2])
-	// 		vm.SetMemory(penpal.AddressSendMessage, 0x0)
-	// 	}
-	// }()
+	go func() {
+		for m := range messages {
+			midiHandler.Send(m[0], m[1], m[2])
+			vm.SetMemory(18, 0x0)
+		}
+	}()
 
 	<-done
 }

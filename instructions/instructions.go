@@ -40,11 +40,11 @@ const (
 	FramePointerPlusRegister  = 0x5
 	FramePointerMinusRegister = 0x6
 
-	RegisterA = 0x7
-	RegisterB = 0x8
+	AddressingModeImmediate  = 0x7
+	AddressingModeFPRelative = 0x8
 
-	AddressingModeImmediate  = 0x9
-	AddressingModeFPRelative = 0xa
+	RegisterA = 0xa
+	RegisterB = 0xb
 )
 
 var Names = map[uint8]string{
@@ -144,11 +144,11 @@ var Width = map[uint8]int{
 }
 
 var WidthNew = map[uint8]int{
-	Mov:    4,
+	Mov:    3,
 	Swap:   1,
 	Halt:   1,
-	Load:   5,
-	Store:  5,
+	Load:   6,
+	Store:  6,
 	Add:    3,
 	Sub:    3,
 	Mul:    3,

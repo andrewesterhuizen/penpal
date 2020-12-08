@@ -15,6 +15,9 @@ type testCase struct {
 }
 
 var testCases = []testCase{
+	{"// args: (status, data1, data2)\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"// db 5\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
+	{"; db 5\n", []Token{newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"db 5\n", []Token{newToken(TokenTypeInstruction, "db"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"add\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},
 	{"add 5\n", []Token{newToken(TokenTypeInstruction, "add"), newToken(TokenTypeInteger, "5"), newToken(TokenTypeNewLine, "\n"), newToken(TokenTypeEndOfFile, "")}},

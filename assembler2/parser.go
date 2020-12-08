@@ -183,7 +183,7 @@ func (p *Parser) parseToken(t lexer_rewrite.Token) error {
 		}
 
 	default:
-		return fmt.Errorf("encountered unknown token %v", t.Type)
+		return fmt.Errorf("unexpected token %v", t.Value)
 	}
 
 	if err != nil {
@@ -196,7 +196,7 @@ func (p *Parser) parseToken(t lexer_rewrite.Token) error {
 func (p *Parser) parseTokens() error {
 	for t := p.tokens[p.index]; t.Type != lexer_rewrite.TokenTypeEndOfFile; t = p.nextToken() {
 		if err := p.parseToken(t); err != nil {
-			return fmt.Errorf("[%d:%d] %s", t.Line, t.Column, err)
+			return fmt.Errorf("[%s:%d:%d] %s", t.FileName, t.Line, t.Column, err)
 		}
 	}
 

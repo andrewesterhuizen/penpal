@@ -189,7 +189,6 @@ func (vm *VM) Interupt(n int) {
 }
 
 func (vm *VM) execute(instruction uint8) {
-	fmt.Println(instruction)
 	switch instruction {
 	case instructions.Swap:
 		vm.a, vm.b = vm.b, vm.a

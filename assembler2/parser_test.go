@@ -30,6 +30,10 @@ func newAritmeticLogicInstructionTest(text string, ins byte) []parserTestCase {
 
 var movTestCases = []parserTestCase{
 	{
+		input:  "mov A, 1",
+		output: []byte{instructions.Mov, instructions.RegisterA, 1},
+	},
+	{
 		input:  "mov A, 0xab",
 		output: []byte{instructions.Mov, instructions.RegisterA, 0xab},
 	},
@@ -40,6 +44,10 @@ var movTestCases = []parserTestCase{
 }
 
 var loadTestCases = []parserTestCase{
+	{
+		input:  "load 1, A",
+		output: []byte{instructions.Load, 0x00, 0x01, instructions.Immediate, 0x0, instructions.RegisterA},
+	},
 	{
 		input:  "load 0xae, A",
 		output: []byte{instructions.Load, 0x00, 0xae, instructions.Immediate, 0x0, instructions.RegisterA},
