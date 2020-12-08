@@ -1,7 +1,1 @@
 Penpal is a virtual machine for sending and receiving midi messages 
-
-TODO: 
-more compact instruction encoding
-receive messages interrupts
-examples programs
-assembler: handle circular include references
