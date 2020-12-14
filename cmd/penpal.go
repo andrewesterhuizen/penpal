@@ -162,22 +162,19 @@ func executeProgramFromFile(filename string) {
 	messages := make(chan midi.MidiMessage)
 
 	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				if vm.Halted {
-					vm.PrintReg()
-					vm.PrintMem(0, 24)
-					done <- true
-					return
-				}
+		for range ticker.C {
+			if vm.Halted {
+				vm.PrintReg()
+				vm.PrintMem(0, 24)
+				done <- true
+				return
+			}
 
-				vm.Tick()
-				m := vm.GetMemorySection(0x000f, 4)
+			vm.Tick()
+			m := vm.GetMemorySection(0x000f, 4)
 
-				if m[3] > 0 {
-					messages <- midi.MidiMessage{m[0], m[1], m[2]}
-				}
+			if m[3] > 0 {
+				messages <- midi.MidiMessage{m[0], m[1], m[2]}
 			}
 		}
 	}()
