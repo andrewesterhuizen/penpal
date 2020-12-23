@@ -36,50 +36,50 @@ midi_send_bit: db 0
 
 // args: (status, data1, data2)
 midi_send_message:
-	// status
 	load (fp+7), A
 	store A, midi_status
-	// data1
 	load (fp+8), A
 	store A, midi_data1
-	// data2
 	load (fp+9), A
 	store A, midi_data2
-
-	// set send byte
 	mov A, 1
 	store A, midi_send_bit
+	ret
 
+// args: (note, velocity)
+midi_note_on:
+	load (fp+8), A
+	push
+	load (fp+7), A
+	push
+	push 0x90
+	push 0x3
+	call midi_send_message
+	ret
+
+// args: (note, velocity)
+midi_note_off:
+	load (fp+8), A
+	push
+	load (fp+7), A
+	push 0x80
+	push 0x3
+	call midi_send_message
 	ret
 
 // args: (note)
 midi_trig:
-	// send note on
-
-	// data2 (velocity)
-	push 0x7f
-	// data1 (note)
 	load (fp+7), A
-	push
-	// status (0x90/note on)
-	push 0x90
-	// number of args
-	push 0x3
-	call midi_send_message
 
-	
-	// send note off
-
-	// data2 (velocity)
 	push 0x7f
-	// data1 (note)
-	load (fp+7), A
 	push
-	// status (0x80/note off)
-	push 0x80
-	// number of args
-    push 0x3
-    call midi_send_message
+	push 2
+	call midi_note_on
+
+	push 0x7f
+	push
+	push 2
+	call midi_note_off
 
     ret
 `
