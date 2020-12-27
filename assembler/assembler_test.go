@@ -116,7 +116,7 @@ func TestInstructions(t *testing.T) {
 
 		a := New(cfg)
 
-		ins, err := a.GetProgram("", fmt.Sprintf("__start:\n%s", tc.input))
+		ins, err := a.GetProgram("", fmt.Sprintf("start:\n%s", tc.input))
 		if err != nil {
 			t.Errorf("failed to get instructions due to error: %s, with input %s", err, tc.input)
 			return
@@ -159,7 +159,7 @@ func TestAssembler_MissingSystemInclude_ReturnsError(t *testing.T) {
 func TestAssembler_UndefinedLabel_ReturnsError(t *testing.T) {
 	a := New(Config{})
 
-	source := `__start:
+	source := `start:
 	jump undefined
 	`
 

@@ -113,7 +113,7 @@ func (a *Assembler) getIncludeTokens(filename string, tokens []token) ([]token, 
 
 func (a *Assembler) getEntryPointTableTokens() ([]token, error) {
 	buf := bytes.Buffer{}
-	buf.WriteString("jump __start\n")
+	buf.WriteString("jump start\n")
 
 	for _, label := range a.config.InteruptLabels {
 		if label != "" {

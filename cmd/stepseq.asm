@@ -39,7 +39,7 @@ steps:
     db 0
     db 1
 
-__start:
+start:
     mov A, 130
     store A, midi_bpm
 

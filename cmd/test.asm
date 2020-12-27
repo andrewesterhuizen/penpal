@@ -39,7 +39,7 @@ steps:
     db 0
     db 1
 
-__start:
+start:
     mov A, 130
     store A, midi_bpm
 
@@ -79,6 +79,8 @@ on_tick:
     // load note
     load i, A
     load (notes[A]), A
+    mov B, 17
+    add
     push
     push 1
     call midi_trig

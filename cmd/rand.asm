@@ -1,6 +1,6 @@
 #include <midi>
 
-__start:
+start:
 loop:
     jump loop
 
